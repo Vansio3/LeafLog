@@ -8,21 +8,29 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <style>
-        /* --- Base styles from previous version --- */
+        /* Base styles */
         body, html { height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         #map { height: 100vh; width: 100%; z-index: 1; }
         .header { position: fixed; top: 0; left: 0; right: 0; z-index: 10; height: 50px; }
+
+        /* FAB General Styles */
         .fab { background-color: #16a34a; color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); cursor: pointer; transition: all 0.3s ease; border: none; }
         .fab:hover { background-color: #15803d; }
         .fab:active { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); transform: translateY(1px); }
         .fab i { font-size: 24px; transition: transform 0.3s ease; }
+
+        /* Locate FAB Container */
         .locate-fab-container { position: fixed; bottom: 80px; right: 15px; z-index: 1000; }
         .fab-secondary { background-color: #ffffff; color: #374151; width: 48px; height: 48px; }
         .fab-secondary:hover { background-color: #f3f4f6; }
         .fab-secondary i { font-size: 20px; }
+
+        /* Add FAB Container & Expansion */
         #add-fab-container { position: fixed; bottom: 140px; right: 15px; z-index: 1000; display: flex; flex-direction: column; align-items: center; gap: 12px; }
         #add-tree-fab { position: relative; z-index: 1001; }
         #add-fab-container.expanded #add-tree-fab i { transform: rotate(45deg); }
+
+        /* Sub FABs (Spotted/Planted) */
         .sub-fab { width: 45px; height: 45px; font-size: 0.8em; font-weight: 600; position: absolute; bottom: 5px; right: 5px; z-index: 1000; opacity: 0; transform: scale(0.5) translateY(10px); transition: opacity 0.2s ease-out, transform 0.2s ease-out; cursor: pointer; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2px; text-align: center; line-height: 1.1; border-radius: 50%; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
         .sub-fab i { font-size: 16px; margin-bottom: 1px; }
         #add-fab-container.expanded .sub-fab { position: relative; bottom: auto; right: auto; opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
@@ -36,33 +44,33 @@
         body.dragging-active { cursor: grabbing !important; user-select: none; }
         #map.drag-over { outline: 2px dashed #16a34a; outline-offset: -2px; }
 
-        /* Bottom Sheet Styles */
-         #bottom-sheet { position: fixed; bottom: 0; left: 0; right: 0; background-color: white; border-top-left-radius: 16px; border-top-right-radius: 16px; box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15); z-index: 1001; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(100%); max-height: 90vh; display: flex; flex-direction: column; }
-         #bottom-sheet.active { transform: translateY(0); }
-         #bottom-sheet.state-handle { transform: translateY(calc(100% - 60px)); }
-         #bottom-sheet.state-form { transform: translateY(0); }
-         #bottom-sheet.state-list-partial { transform: translateY(40%); }
-         #bottom-sheet.state-list-full { transform: translateY(10%); }
-         .bottom-sheet-handle { padding: 10px; text-align: center; cursor: pointer; border-bottom: 1px solid #eee; }
-         .bottom-sheet-handle-bar { width: 40px; height: 5px; background-color: #d1d5db; border-radius: 3px; margin: 0 auto; }
-         .bottom-sheet-content { padding: 15px; overflow-y: auto; flex-grow: 1; }
-         .bottom-sheet-view { display: none; } .bottom-sheet-view.visible { display: block; }
-         .bottom-sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eee; }
-         .bottom-sheet-header h3 { font-size: 1.2rem; font-weight: 600; color: #333; margin: 0; }
-         .bottom-sheet-back-btn, .bottom-sheet-close-btn { background: none; border: none; font-size: 1.3rem; color: #6b7280; cursor: pointer; padding: 5px; }
-         .main-menu-button { display: flex; justify-content: space-between; align-items: center; padding: 12px 8px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px; cursor: pointer; background-color: white; transition: background-color 0.2s; }
-         .main-menu-button:hover { background-color: #f9fafb; }
-         .main-menu-button h4 { font-weight: 500; margin: 0; color: #374151; }
-         .main-menu-button .count-badge { background-color: #e0e0e0; color: #555; padding: 0.1rem 0.5rem; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
-         .main-menu-button i.fa-chevron-right { color: #aaa; }
-         .list-item { padding: 10px 5px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
-         .list-item:last-child { border-bottom: none; }
-         .list-item .view-on-map-btn { background: none; border: none; color: #3498db; cursor: pointer; font-size: 0.9em; margin-left: 8px; padding: 0.25rem; white-space: nowrap; }
-         .list-item .view-on-map-btn:hover { text-decoration: underline; }
-         #add-form-view { padding-top: 0; } #add-form-view form { margin-top: 0; }
-         .popup-image { max-width: 100%; max-height: 150px; object-fit: cover; border-radius: 4px; margin-top: 8px; }
-         .leaflet-popup-content { min-width: 220px; }
-         .current-location-marker { background-color: rgba(51, 133, 255, 0.4); border: 2px solid #3385ff; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
+        /* Bottom Sheet */
+        #bottom-sheet { position: fixed; bottom: 0; left: 0; right: 0; background-color: white; border-top-left-radius: 16px; border-top-right-radius: 16px; box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15); z-index: 1001; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(100%); max-height: 90vh; display: flex; flex-direction: column; }
+        #bottom-sheet.active { transform: translateY(0); }
+        #bottom-sheet.state-handle { transform: translateY(calc(100% - 60px)); }
+        #bottom-sheet.state-form { transform: translateY(0); }
+        #bottom-sheet.state-list-partial { transform: translateY(40%); }
+        #bottom-sheet.state-list-full { transform: translateY(10%); }
+        .bottom-sheet-handle { padding: 10px; text-align: center; cursor: pointer; border-bottom: 1px solid #eee; }
+        .bottom-sheet-handle-bar { width: 40px; height: 5px; background-color: #d1d5db; border-radius: 3px; margin: 0 auto; }
+        .bottom-sheet-content { padding: 15px; overflow-y: auto; flex-grow: 1; }
+        .bottom-sheet-view { display: none; } .bottom-sheet-view.visible { display: block; }
+        .bottom-sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eee; }
+        .bottom-sheet-header h3 { font-size: 1.2rem; font-weight: 600; color: #333; margin: 0; }
+        .bottom-sheet-back-btn, .bottom-sheet-close-btn { background: none; border: none; font-size: 1.3rem; color: #6b7280; cursor: pointer; padding: 5px; }
+        .main-menu-button { display: flex; justify-content: space-between; align-items: center; padding: 12px 8px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px; cursor: pointer; background-color: white; transition: background-color 0.2s; }
+        .main-menu-button:hover { background-color: #f9fafb; }
+        .main-menu-button h4 { font-weight: 500; margin: 0; color: #374151; }
+        .main-menu-button .count-badge { background-color: #e0e0e0; color: #555; padding: 0.1rem 0.5rem; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
+        .main-menu-button i.fa-chevron-right { color: #aaa; }
+        .list-item { padding: 10px 5px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .list-item:last-child { border-bottom: none; }
+        .list-item .view-on-map-btn { background: none; border: none; color: #3498db; cursor: pointer; font-size: 0.9em; margin-left: 8px; padding: 0.25rem; white-space: nowrap; }
+        .list-item .view-on-map-btn:hover { text-decoration: underline; }
+        #add-form-view { padding-top: 0; } #add-form-view form { margin-top: 0; }
+        .popup-image { max-width: 100%; max-height: 150px; object-fit: cover; border-radius: 4px; margin-top: 8px; }
+        .leaflet-popup-content { min-width: 220px; }
+        .current-location-marker { background-color: rgba(51, 133, 255, 0.4); border: 2px solid #3385ff; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
 
         /* Print Styles */
         @media print { body, html { height: auto; overflow: visible; } #map { height: 95vh !important; page-break-inside: avoid; width: 100% !important; } .no-print { display: none !important; } .header { position: relative !important; } #bottom-sheet, .locate-fab-container, #add-fab-container { display: none !important; } .current-location-marker { display: none !important; } }
@@ -128,6 +136,7 @@
                    <h3>Spotted Trees</h3>
                    <button class="bottom-sheet-close-btn" aria-label="Close sheet"><i class="fas fa-times"></i></button>
                  </div>
+                 <!-- Verify this ID -->
                  <ul id="spotted-list" class="list-item-container"></ul>
             </div>
             <!-- Planted List View -->
@@ -137,6 +146,7 @@
                    <h3>Planted Trees</h3>
                    <button class="bottom-sheet-close-btn" aria-label="Close sheet"><i class="fas fa-times"></i></button>
                  </div>
+                  <!-- Verify this ID -->
                  <ul id="planted-list" class="list-item-container"></ul>
             </div>
             <!-- Reminders List View -->
@@ -146,6 +156,7 @@
                    <h3>Reminders</h3>
                    <button class="bottom-sheet-close-btn" aria-label="Close sheet"><i class="fas fa-times"></i></button>
                   </div>
+                   <!-- Verify this ID -->
                   <ul id="reminders-list" class="list-item-container"></ul>
             </div>
             <!-- Add Form View -->
@@ -205,10 +216,8 @@
             const map = L.map('map', { zoomControl: false }).setView(defaultCoords, 13);
             L.control.zoom({ position: 'bottomright' }).addTo(map);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM', maxZoom: 19 }).addTo(map);
-            let currentLocationMarker = null;
-            let lastKnownLocation = null;
-            let centeredOnLocation = false;
-            if (navigator.geolocation) { /* ... geolocation watchPosition logic ... */ navigator.geolocation.watchPosition( (pos) => { const lat=pos.coords.latitude, lng=pos.coords.longitude; lastKnownLocation=[lat,lng]; if(!currentLocationMarker){ currentLocationMarker=L.circleMarker(lastKnownLocation, {radius:8, className:'current-location-marker'}).addTo(map).bindPopup("Your location"); } else { currentLocationMarker.setLatLng(lastKnownLocation); } if(!centeredOnLocation){ map.setView(lastKnownLocation, 16); centeredOnLocation=true; if(currentLocationMarker) currentLocationMarker.openPopup(); } }, (err) => { console.error("Geo Err: ", err.message); if(!centeredOnLocation)map.setView(defaultCoords, 13); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } ); } else { console.log("Geo not supported."); }
+            let currentLocationMarker = null; let lastKnownLocation = null; let centeredOnLocation = false;
+            if (navigator.geolocation) { navigator.geolocation.watchPosition( (pos) => { const lat=pos.coords.latitude, lng=pos.coords.longitude; lastKnownLocation=[lat,lng]; if(!currentLocationMarker){ currentLocationMarker=L.circleMarker(lastKnownLocation, {radius:8, className:'current-location-marker'}).addTo(map).bindPopup("Your location"); } else { currentLocationMarker.setLatLng(lastKnownLocation); } if(!centeredOnLocation){ map.setView(lastKnownLocation, 16); centeredOnLocation=true; if(currentLocationMarker) currentLocationMarker.openPopup(); } }, (err) => { console.error("Geo Err: ", err.message); if(!centeredOnLocation)map.setView(defaultCoords, 13); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } ); } else { console.log("Geo not supported."); }
 
             // --- DOM References ---
             const bottomSheet = document.getElementById('bottom-sheet');
@@ -229,13 +238,12 @@
             const imagePreview = document.getElementById('image-preview');
             const previewImg = document.getElementById('preview-img');
             const cancelFormBtn = document.getElementById('cancel-form-btn');
-            const spottedList = document.getElementById('spotted-list');
-            const plantedList = document.getElementById('planted-list');
-            const remindersList = document.getElementById('reminders-list');
-            const spottedCountBadge = document.getElementById('spotted-count');
-            const plantedCountBadge = document.getElementById('planted-count');
-            // ***** CORRECTED REFERENCE *****
-            const reminderCountBadge = document.getElementById('reminder-count');
+            const spottedList = document.getElementById('spotted-list'); // Verify ID in HTML
+            const plantedList = document.getElementById('planted-list'); // Verify ID in HTML
+            const remindersList = document.getElementById('reminders-list'); // Verify ID in HTML
+            const spottedCountBadge = document.getElementById('spotted-count'); // Verify ID in HTML
+            const plantedCountBadge = document.getElementById('planted-count'); // Verify ID in HTML
+            const reminderCountBadge = document.getElementById('reminder-count'); // Verify ID in HTML
             const notification = document.getElementById('notification');
 
             // --- State Variables ---
@@ -249,6 +257,7 @@
             let startX, startY, offsetX, offsetY;
 
             // --- Function Definitions ---
+
             // Bottom Sheet Management
             function setBottomSheetState(newState, viewId = null) { bottomSheet.classList.remove('state-handle', 'state-form', 'state-list-partial', 'state-list-full', 'active'); if (newState === 'closed'){ currentBottomSheetState = 'closed'; } else { bottomSheet.classList.add('active', newState); currentBottomSheetState = newState; if (viewId) showBottomSheetView(viewId); } }
             function showBottomSheetView(viewId) { allSheetViews.forEach(v => v.classList.toggle('visible', v.id === viewId)); currentBottomSheetView = viewId; bottomSheet.querySelector('.bottom-sheet-content').scrollTop = 0; }
@@ -260,84 +269,64 @@
             function createPopupContent(tree) { const rbt=tree.needsAttention?'Remove Reminder':'Add Reminder'; const rbc=tree.needsAttention?'bg-yellow-500 hover:bg-yellow-600':'bg-blue-500 hover:bg-blue-600'; let c=`<div class="popup-content"><h3 class="text-lg font-semibold">${tree.species}</h3><p class="text-sm text-gray-600"><strong>Type:</strong> ${tree.type}</p>`; if(tree.notes)c+=`<p class="text-sm mt-1"><strong>Notes:</strong> ${tree.notes}</p>`; if(tree.imageUrl)c+=`<img src="${tree.imageUrl}" alt="${tree.species}" class="popup-image mt-2">`; c+=`<button class="toggle-reminder-btn text-xs text-white px-2 py-1 rounded mt-3 ${rbc}" data-tree-id="${tree.id}"><i class="fas ${tree.needsAttention?'fa-bell-slash':'fa-bell'} mr-1"></i>${rbt}</button></div>`; return c; }
             function attachReminderButtonListener(treeId) { const b=document.querySelector(`.toggle-reminder-btn[data-tree-id="${treeId}"]`); if(b){b.removeEventListener('click',handleReminderToggle); b.addEventListener('click',handleReminderToggle);} }
             function handleReminderToggle(event) { const b=event.target.closest('button'); const tId=b.getAttribute('data-tree-id'); const tIdx=trees.findIndex(t=>t.id===tId); if(tIdx!==-1){trees[tIdx].needsAttention=!trees[tIdx].needsAttention; saveTreesToLocalStorage(); const m=markers[tId]; if(m&&m.isPopupOpen()){m.setPopupContent(createPopupContent(trees[tIdx])); attachReminderButtonListener(tId);} populateLists(); showNotification(trees[tIdx].needsAttention?'Reminder added!':'Reminder removed.');} }
-             // List Population
+
+            // List Population (with Null Checks)
             function populateLists() {
-                spottedList.innerHTML=''; plantedList.innerHTML=''; remindersList.innerHTML='';
+                // Check if list elements are available *at the start* of the function
+                if (!spottedList || !plantedList || !remindersList || !spottedCountBadge || !plantedCountBadge || !reminderCountBadge) {
+                    console.error("One or more list/badge elements not found at the start of populateLists. Aborting list population.");
+                    return; // Exit the function if critical elements are missing
+                }
+
+                // Clear existing list content
+                spottedList.innerHTML='';
+                plantedList.innerHTML='';
+                remindersList.innerHTML='';
+
                 let sc=0, pc=0, rc=0;
                 const sorted=[...trees].sort((a,b)=>a.species.localeCompare(b.species));
+
                 sorted.forEach(tree=>{
                     const itemHTML=`<span class="flex-grow mr-2 overflow-hidden"><i class="fas fa-tree mr-2 ${tree.type==='Planted'?'text-blue-600':'text-green-600'}"></i><span class="font-medium">${tree.species}</span>${tree.notes?`<span class="text-xs text-gray-500 block ml-5 truncate" title="${tree.notes}">(${tree.notes.substring(0,30)}${tree.notes.length>30?'...':''})</span>`:''}</span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`;
                     const action = ()=>{ const targetTree=trees.find(t=>t.id===tree.id); if(targetTree){setBottomSheetState('closed'); map.setView(targetTree.location, 17, {animate:true}); setTimeout(()=>{if(markers[targetTree.id]) markers[targetTree.id].openPopup();}, 300); }};
                     const listItem=document.createElement('li'); listItem.className='list-item'; listItem.innerHTML=itemHTML; listItem.querySelector('.view-on-map-btn').addEventListener('click',action);
-                    if(tree.type==='Spotted'){spottedList.appendChild(listItem); sc++;} else if(tree.type==='Planted'){plantedList.appendChild(listItem); pc++;}
-                    if(tree.needsAttention){const reminderItem=document.createElement('li'); reminderItem.className='list-item'; reminderItem.innerHTML=`<span class="flex-grow mr-2 overflow-hidden"><i class="fas fa-bell mr-2 text-orange-500"></i><span class="font-medium">${tree.species}</span> <span class="text-xs text-gray-500">(${tree.type})</span></span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`; reminderItem.querySelector('.view-on-map-btn').addEventListener('click',action); remindersList.appendChild(reminderItem); rc++;}
+
+                    // Append, checking list variable just in case (though checked above)
+                    if(tree.type==='Spotted'){ if(spottedList) spottedList.appendChild(listItem); sc++;}
+                    else if(tree.type==='Planted'){ if(plantedList) plantedList.appendChild(listItem); pc++;}
+
+                    if(tree.needsAttention){
+                        const reminderItem=document.createElement('li'); reminderItem.className='list-item'; reminderItem.innerHTML=`<span class="flex-grow mr-2 overflow-hidden"><i class="fas fa-bell mr-2 text-orange-500"></i><span class="font-medium">${tree.species}</span> <span class="text-xs text-gray-500">(${tree.type})</span></span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`; reminderItem.querySelector('.view-on-map-btn').addEventListener('click',action);
+                        if(remindersList) remindersList.appendChild(reminderItem); // Check before append
+                        rc++;
+                    }
                 });
 
-                // Check if badge elements exist before setting textContent
-                if (spottedCountBadge) spottedCountBadge.textContent=sc; else console.error("spottedCountBadge not found");
-                if (plantedCountBadge) plantedCountBadge.textContent=pc; else console.error("plantedCountBadge not found");
-                if (reminderCountBadge) reminderCountBadge.textContent=rc; else console.error("reminderCountBadge not found"); // Now using correct variable
+                // Update counts (already checked for nulls above)
+                spottedCountBadge.textContent=sc;
+                plantedCountBadge.textContent=pc;
+                reminderCountBadge.textContent=rc;
 
+                // Set Placeholders (already checked for nulls above)
                 const placeholderHTML='<li class="text-gray-500 italic p-4 text-center">Nothing here yet.</li>';
-                // Check if list elements exist before setting innerHTML
-                if (spottedList) { if(sc===0)spottedList.innerHTML=placeholderHTML; } else console.error("spottedList not found");
-                if (plantedList) { if(pc===0)plantedList.innerHTML=placeholderHTML; } else console.error("plantedList not found");
-                if (remindersList) { if(rc===0)remindersList.innerHTML=placeholderHTML; } else console.error("remindersList not found");
+                if(sc===0) spottedList.innerHTML=placeholderHTML;
+                if(pc===0) plantedList.innerHTML=placeholderHTML;
+                if(rc===0) remindersList.innerHTML=placeholderHTML;
             }
+
             // Notification
             function showNotification(message) { document.getElementById('notification-text').textContent=message; notification.classList.remove('translate-x-full'); notification.classList.add('translate-x-0'); setTimeout(()=>{notification.classList.remove('translate-x-0'); notification.classList.add('translate-x-full');},3000); }
             // Load existing data
             function loadExistingTrees() { trees.forEach(tree => { if (tree.needsAttention === undefined) tree.needsAttention = false; addTreeMarker(tree); }); }
-
             // Drag Simulation Functions
-             function startDrag(e) {
-                if (e.type === 'touchstart') e.preventDefault();
-                const fab = e.currentTarget;
-                dragTreeType = fab.dataset.treeType;
-                isDragging = true;
-                const touch = e.type === 'touchstart' ? e.touches[0] : e;
-                startX = touch.clientX; startY = touch.clientY;
-                const rect = fab.getBoundingClientRect();
-                offsetX = startX - rect.left; offsetY = startY - rect.top;
-                dragClone = fab.cloneNode(true); dragClone.id = 'drag-clone';
-                dragClone.style.left = `${startX - offsetX}px`; dragClone.style.top = `${startY - offsetY}px`;
-                dragClone.style.backgroundColor = window.getComputedStyle(fab).backgroundColor;
-                dragClone.style.color = window.getComputedStyle(fab).color;
-                document.body.appendChild(dragClone); document.body.classList.add('dragging-active');
-                if (addFabContainer.classList.contains('expanded')) { addFabContainer.classList.remove('expanded'); }
-                map.dragging.disable(); if (map.doubleClickZoom) map.doubleClickZoom.disable();
-            }
-            function dragMove(e) {
-                if (!isDragging || !dragClone) return;
-                if (e.type === 'touchmove') e.preventDefault();
-                const touch = e.type === 'touchmove' ? e.touches[0] : e;
-                const currentX = touch.clientX; const currentY = touch.clientY;
-                dragClone.style.left = `${currentX - offsetX}px`; dragClone.style.top = `${currentY - offsetY}px`;
-                const elementUnderPointer = document.elementFromPoint(currentX, currentY);
-                mapContainer.classList.toggle('drag-over', mapContainer.contains(elementUnderPointer));
-            }
-            function endDrag(e) {
-                if (!isDragging) return;
-                map.dragging.enable(); if (map.doubleClickZoom) map.doubleClickZoom.enable();
-                if (dragClone) { dragClone.remove(); dragClone = null; }
-                document.body.classList.remove('dragging-active'); mapContainer.classList.remove('drag-over');
-                const touch = e.type === 'touchend' ? e.changedTouches[0] : e;
-                const finalX = touch.clientX; const finalY = touch.clientY;
-                const elementUnderPointer = document.elementFromPoint(finalX, finalY);
-                if (mapContainer.contains(elementUnderPointer)) {
-                    const point = map.containerPointToLayerPoint([finalX, finalY]);
-                    const latLng = map.layerPointToLatLng(point);
-                    console.log("Drop Coords (Simulated):", latLng);
-                    if (latLng && dragTreeType) { openAddForm(latLng.lat, latLng.lng, dragTreeType); }
-                    else { console.warn("Could not get LatLng or tree type on drop."); }
-                } else { console.log("Dropped outside map area."); }
-                isDragging = false; dragTreeType = null; startX = null; startY = null; offsetX = null; offsetY = null;
-            }
+            function startDrag(e) { if (e.type === 'touchstart') e.preventDefault(); const fab = e.currentTarget; dragTreeType = fab.dataset.treeType; isDragging = true; const touch = e.type === 'touchstart' ? e.touches[0] : e; startX = touch.clientX; startY = touch.clientY; const rect = fab.getBoundingClientRect(); offsetX = startX - rect.left; offsetY = startY - rect.top; dragClone = fab.cloneNode(true); dragClone.id = 'drag-clone'; dragClone.style.left = `${startX - offsetX}px`; dragClone.style.top = `${startY - offsetY}px`; dragClone.style.backgroundColor = window.getComputedStyle(fab).backgroundColor; dragClone.style.color = window.getComputedStyle(fab).color; document.body.appendChild(dragClone); document.body.classList.add('dragging-active'); if (addFabContainer.classList.contains('expanded')) { addFabContainer.classList.remove('expanded'); } map.dragging.disable(); if (map.doubleClickZoom) map.doubleClickZoom.disable(); }
+            function dragMove(e) { if (!isDragging || !dragClone) return; if (e.type === 'touchmove') e.preventDefault(); const touch = e.type === 'touchmove' ? e.touches[0] : e; const currentX = touch.clientX; const currentY = touch.clientY; dragClone.style.left = `${currentX - offsetX}px`; dragClone.style.top = `${currentY - offsetY}px`; const elementUnderPointer = document.elementFromPoint(currentX, currentY); mapContainer.classList.toggle('drag-over', mapContainer.contains(elementUnderPointer)); }
+            function endDrag(e) { if (!isDragging) return; map.dragging.enable(); if (map.doubleClickZoom) map.doubleClickZoom.enable(); if (dragClone) { dragClone.remove(); dragClone = null; } document.body.classList.remove('dragging-active'); mapContainer.classList.remove('drag-over'); const touch = e.type === 'touchend' ? e.changedTouches[0] : e; const finalX = touch.clientX; const finalY = touch.clientY; const elementUnderPointer = document.elementFromPoint(finalX, finalY); if (mapContainer.contains(elementUnderPointer)) { const point = map.containerPointToLayerPoint([finalX, finalY]); const latLng = map.layerPointToLatLng(point); console.log("Drop Coords (Simulated):", latLng); if (latLng && dragTreeType) { openAddForm(latLng.lat, latLng.lng, dragTreeType); } else { console.warn("Could not get LatLng or tree type on drop."); } } else { console.log("Dropped outside map area."); } isDragging = false; dragTreeType = null; startX = null; startY = null; offsetX = null; offsetY = null; }
 
             // --- Event Listeners & Initialization Function ---
             function initializeApp() {
                 loadExistingTrees();
-                populateLists();
+                populateLists(); // Call populateLists which now has internal checks
                 setBottomSheetState('state-handle', 'main-menu-view');
 
                 // Bottom Sheet Listeners
@@ -360,7 +349,71 @@
 
                 // Form Listeners
                 cancelFormBtn.addEventListener('click', () => { setBottomSheetState('closed'); treeForm.reset(); imagePreview.classList.add('hidden'); });
-                treeForm.addEventListener('submit', (e) => { e.preventDefault(); const lat=parseFloat(latInput.value); const lng=parseFloat(lngInput.value); const type=typeSelect.value; const species=document.getElementById('species').value; const notes=document.getElementById('notes').value; const imageFile=imageInput.files[0]; let imageDataUrl=''; function saveTreeData() { const tree={id:Date.now().toString(),type,species,notes,location:{lat,lng},imageUrl:imageDataUrl,dateAdded:new Date().toISOString(),needsAttention:false}; trees.push(tree); saveTreesToLocalStorage(); addTreeMarker(tree); populateLists(); setBottomSheetState('closed'); treeForm.reset();imagePreview.classList.add('hidden'); showNotification('Tree added successfully!'); } if(imageFile){const reader=new FileReader();reader.onload=(e)=>{imageDataUrl=e.target.result;saveTreeData();};reader.readAsDataURL(imageFile);}else{saveTreeData();} });
+                treeForm.addEventListener('submit', (e) => {
+                    console.log("Form submit event triggered.");
+                    e.preventDefault(); // Ensure this is first
+                    console.log("Default prevented.");
+
+                    const lat = parseFloat(latInput.value);
+                    const lng = parseFloat(lngInput.value);
+                    const type = typeSelect.value;
+                    const species = document.getElementById('species').value;
+                    const notes = document.getElementById('notes').value;
+                    const imageFile = imageInput.files[0];
+                    let imageDataUrl = '';
+
+                    console.log(`Submitting: Type=${type}, Species=${species}, Lat=${lat}, Lng=${lng}, Notes=${notes}, ImageFile=${imageFile ? imageFile.name : 'None'}`);
+
+                    // Basic Validation
+                    if (!type || !species || isNaN(lat) || isNaN(lng)) {
+                         console.error("Form validation failed: Missing required data or invalid coordinates.");
+                         showNotification("Error: Please fill required fields.");
+                         return; // Stop submission
+                    }
+
+                    function saveTreeData() {
+                         console.log("Executing saveTreeData()...");
+                         const tree={id:Date.now().toString(),type,species,notes,location:{lat,lng},imageUrl:imageDataUrl,dateAdded:new Date().toISOString(),needsAttention:false};
+                         trees.push(tree);
+                         try {
+                             saveTreesToLocalStorage();
+                             console.log("Saved to localStorage.");
+                         } catch (error) {
+                             console.error("LocalStorage Error:", error);
+                             showNotification("Error saving data. Storage might be full.");
+                             return; // Stop if saving failed
+                         }
+                         addTreeMarker(tree);
+                         console.log("Marker added.");
+                         populateLists();
+                         console.log("Lists populated.");
+                         setBottomSheetState('closed');
+                         treeForm.reset();imagePreview.classList.add('hidden');
+                         console.log("Form reset and sheet closed.");
+                         showNotification('Tree added successfully!');
+                    } // End of saveTreeData
+
+                    // Image Handling
+                    if(imageFile){
+                        console.log("Image file detected, starting FileReader...");
+                        const reader=new FileReader();
+                        reader.onload=(e)=>{
+                            console.log("FileReader onload triggered.");
+                            imageDataUrl=e.target.result;
+                            saveTreeData(); // Call save ONLY after successful load
+                        };
+                        reader.onerror = (error) => {
+                            console.error("FileReader Error: ", error);
+                            showNotification("Error reading image file. Try without image?");
+                            // Stop here on error
+                        };
+                        reader.readAsDataURL(imageFile);
+                    }else{
+                        console.log("No image file, calling saveTreeData() directly.");
+                        saveTreeData(); // Call directly if no image
+                    }
+                }); // End of submit listener
+
                 imageInput.addEventListener('change', (e) => { if (e.target.files.length > 0) { const file = e.target.files[0]; const reader = new FileReader(); reader.onload = (e) => { previewImg.src = e.target.result; imagePreview.classList.remove('hidden'); }; reader.readAsDataURL(file); } else { imagePreview.classList.add('hidden'); } });
 
             } // End of initializeApp
