@@ -4,14 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LeafLog - Tree Mapping</title>
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-    <!-- Theme Color -->
-    <meta name="theme-color" content="#16a34a">
-    <!-- iOS Meta Tags -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"> <!-- or default or black -->
-    <meta name="apple-mobile-web-app-title" content="LeafLog">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
@@ -763,21 +755,6 @@
             initializeApp();
 
         }); // End of DOMContentLoaded listener
-    </script>
-    <!-- PWA Service Worker Registration -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                // Register the service worker, using the correct path for GitHub Pages
-                navigator.serviceWorker.register('/LeafLog/service-worker.js')
-                    .then(registration => {
-                        console.log('Service Worker registered successfully with scope:', registration.scope);
-                    })
-                    .catch(error => {
-                        console.error('Service Worker registration failed:', error);
-                    });
-            });
-        }
     </script>
 </body>
 </html>

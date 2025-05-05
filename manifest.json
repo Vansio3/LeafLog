@@ -1,0 +1,24 @@
+{
+    "name": "LeafLog - Tree Mapping",
+    "short_name": "LeafLog",
+    "description": "Simple app for mapping spotted and planted trees.",
+    "start_url": "/LeafLog/index.html",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#16a34a",
+    "orientation": "portrait-primary",
+    "icons": [
+      {
+        "src": "icons/icon-192x192.png",
+        "type": "image/png",
+        "sizes": "192x192",
+        "purpose": "any maskable"
+      },
+      {
+        "src": "icons/icon-512x512.png",
+        "type": "image/png",
+        "sizes": "512x512",
+        "purpose": "any maskable"
+      }
+    ]
+  }
