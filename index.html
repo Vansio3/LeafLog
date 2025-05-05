@@ -220,16 +220,15 @@
 
             if (navigator.geolocation) {
                  navigator.geolocation.watchPosition(
-                    (position) => { // Renamed pos to position for clarity
+                    (position) => {
                         const lat = position.coords.latitude;
                         const lng = position.coords.longitude;
-                        lastKnownLocation = [lat, lng]; // Update last known location
+                        lastKnownLocation = [lat, lng];
 
-                        // Update or create the marker
+                        // Update or create the marker - REMOVED .bindPopup()
                         if (!currentLocationMarker) {
                             currentLocationMarker = L.circleMarker(lastKnownLocation, { radius: 8, className: 'current-location-marker' })
-                                .addTo(map)
-                                .bindPopup("Your current location");
+                                .addTo(map); // <<< No .bindPopup() here
                             console.log("Current location marker created.");
                         } else {
                             currentLocationMarker.setLatLng(lastKnownLocation);
@@ -339,15 +338,7 @@
                 locateFab.addEventListener('click', () => {
                     if (lastKnownLocation) {
                         map.setView(lastKnownLocation, 16, { animate: true });
-                        if (currentLocationMarker) {
-                             currentLocationMarker.openPopup();
-                             setTimeout(() => {
-                                 if(currentLocationMarker && map.getBounds().contains(currentLocationMarker.getLatLng())) {
-                                     // Optional: close automatically
-                                     // currentLocationMarker.closePopup();
-                                 }
-                             }, 3000);
-                         }
+                        // Popup removed for current location marker
                     } else {
                         showNotification("Your location is not available yet.");
                     }
