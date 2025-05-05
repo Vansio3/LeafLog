@@ -72,18 +72,13 @@
         .list-item .view-on-map-btn:hover { text-decoration: underline; }
         #add-form-view { padding-top: 0; } #add-form-view form { margin-top: 0; }
         .popup-image { max-width: 100%; max-height: 150px; object-fit: cover; border-radius: 4px; margin-top: 8px; }
-        .leaflet-popup-content { min-width: 220px; padding-bottom: 8px !important; } /* Ensure padding */
+        .leaflet-popup-content { min-width: 220px; padding-bottom: 8px !important; }
 
-        /* Current Location Marker Icon */
-        .current-location-div-icon {
-            background: none;
-            border: none;
-            /* Optional: Add shadow or pulses if desired via CSS */
-            /* filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)); */
-        }
+        /* REMOVED: .current-location-div-icon CSS */
+        /* Use Leaflet's default styling for circleMarker */
 
         /* Print Styles */
-        @media print { body, html { height: auto; overflow: visible; } #map { height: 95vh !important; page-break-inside: avoid; width: 100% !important; } .no-print { display: none !important; } .header { position: relative !important; } #bottom-sheet, .locate-fab-container, #add-fab-container { display: none !important; } .current-location-div-icon { display: none !important; } } /* Hide location icon on print */
+        @media print { body, html { height: auto; overflow: visible; } #map { height: 95vh !important; page-break-inside: avoid; width: 100% !important; } .no-print { display: none !important; } .header { position: relative !important; } #bottom-sheet, .locate-fab-container, #add-fab-container { display: none !important; } .leaflet-marker-icon[class*="current-location-marker"] { display: none !important; } } /* Hide circleMarker on print */
     </style>
 </head>
 <body class="bg-gray-100">
@@ -225,17 +220,12 @@
 
             // --- Map Initialization & Geolocation ---
             const defaultCoords = [42.501511, 27.466138];
-            const map = L.map('map', { zoomControl: false }).setView(defaultCoords, 13); // Start at default
+            const map = L.map('map', { zoomControl: false }).setView(defaultCoords, 13);
             L.control.zoom({ position: 'bottomright' }).addTo(map);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM', maxZoom: 19 }).addTo(map);
 
-            // Define the Font Awesome DivIcon for current location
-            const currentLocationIcon = L.divIcon({
-                html: '<i class="fas fa-location-arrow text-blue-600 text-2xl"></i>',
-                className: 'current-location-div-icon', // Important to remove default styles
-                iconSize: [24, 24],   // Approx size of fa-2x
-                iconAnchor: [12, 12]   // Center anchor
-            });
+            // REMOVED: L.divIcon definition
+            // const currentLocationIcon = L.divIcon({...});
 
             let currentLocationMarker = null;
             let lastKnownLocation = null;
@@ -247,16 +237,20 @@
                         const lng = position.coords.longitude;
                         lastKnownLocation = [lat, lng];
 
-                        // Use L.marker with the custom icon
+                        // Reverted to L.circleMarker
                         if (!currentLocationMarker) {
-                            currentLocationMarker = L.marker(lastKnownLocation, {
-                                icon: currentLocationIcon
+                             currentLocationMarker = L.circleMarker(lastKnownLocation, {
+                                radius: 8,
+                                fillColor: "#3b82f6", // Tailwind blue-500
+                                color: "#ffffff", // White border
+                                weight: 2,
+                                opacity: 1,
+                                fillOpacity: 0.8
                             }).addTo(map);
-                            console.log("Current location marker (FA icon) created.");
+                            console.log("Current location marker (circle) created.");
                         } else {
                             currentLocationMarker.setLatLng(lastKnownLocation);
                         }
-                        // Auto-centering removed
                     },
                     (err) => {
                         console.error("Geo Err: ", err.message);
@@ -319,81 +313,19 @@
             // Bottom Sheet Management
             function setBottomSheetState(newState, viewId = null) { bottomSheet.classList.remove('state-handle', 'state-form', 'state-list-partial', 'state-list-full', 'active'); if (newState === 'closed'){ currentBottomSheetState = 'closed'; } else { bottomSheet.classList.add('active', newState); currentBottomSheetState = newState; if (viewId) showBottomSheetView(viewId); } }
             function showBottomSheetView(viewId) { allSheetViews.forEach(v => v.classList.toggle('visible', v.id === viewId)); currentBottomSheetView = viewId; bottomSheet.querySelector('.bottom-sheet-content').scrollTop = 0; }
-
             // Form Handling
-            function openAddForm(lat, lng, treeType) {
-                console.log(`Opening ADD form for ${treeType} at ${lat}, ${lng}`);
-                editTreeIdInput.value = ''; addFormTitle.textContent = 'Add New Tree';
-                latInput.value = lat; lngInput.value = lng; typeSelect.value = treeType;
-                speciesInput.value = ''; notesInput.value = ''; imageInput.value = null;
-                imagePreview.classList.add('hidden');
-                setBottomSheetState('state-form', 'add-form-view');
-                speciesInput.focus();
-            }
-            function openEditForm(treeId) {
-                const tree = trees.find(t => t.id === treeId);
-                if (!tree) { console.error("Tree not found for editing:", treeId); return; }
-                console.log(`Opening EDIT form for tree ID: ${treeId}`);
-                map.closePopup();
-                editTreeIdInput.value = treeId; addFormTitle.textContent = 'Edit Tree';
-                latInput.value = tree.location.lat; lngInput.value = tree.location.lng; typeSelect.value = tree.type;
-                speciesInput.value = tree.species; notesInput.value = tree.notes || ''; imageInput.value = null;
-                if (tree.imageUrl) { previewImg.src = tree.imageUrl; imagePreview.classList.remove('hidden'); }
-                else { imagePreview.classList.add('hidden'); }
-                setBottomSheetState('state-form', 'add-form-view');
-                speciesInput.focus();
-            }
-
+            function openAddForm(lat, lng, treeType) { console.log(`Opening ADD form for ${treeType} at ${lat}, ${lng}`); editTreeIdInput.value = ''; addFormTitle.textContent = 'Add New Tree'; latInput.value = lat; lngInput.value = lng; typeSelect.value = treeType; speciesInput.value = ''; notesInput.value = ''; imageInput.value = null; imagePreview.classList.add('hidden'); setBottomSheetState('state-form', 'add-form-view'); speciesInput.focus(); }
+            function openEditForm(treeId) { const tree = trees.find(t => t.id === treeId); if (!tree) { console.error("Tree not found for editing:", treeId); return; } console.log(`Opening EDIT form for tree ID: ${treeId}`); map.closePopup(); editTreeIdInput.value = treeId; addFormTitle.textContent = 'Edit Tree'; latInput.value = tree.location.lat; lngInput.value = tree.location.lng; typeSelect.value = tree.type; speciesInput.value = tree.species; notesInput.value = tree.notes || ''; imageInput.value = null; if (tree.imageUrl) { previewImg.src = tree.imageUrl; imagePreview.classList.remove('hidden'); } else { imagePreview.classList.add('hidden'); } setBottomSheetState('state-form', 'add-form-view'); speciesInput.focus(); }
             // Local Storage & Marker Management
             function saveTreesToLocalStorage() { localStorage.setItem('leaflog_trees', JSON.stringify(trees)); }
-            function addTreeMarker(tree) {
-                const marker = L.marker([tree.location.lat, tree.location.lng]).addTo(map);
-                markers[tree.id] = marker;
-                marker.on('popupopen', () => attachPopupListeners(tree.id)); // Use named function
-                marker.bindPopup(() => createPopupContent(tree)); // Use function for dynamic content
-            }
-            function createPopupContent(tree) {
-                const reminderButtonText = tree.needsAttention ? 'Remove Reminder' : 'Add Reminder';
-                const reminderButtonClass = tree.needsAttention ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-blue-500 hover:bg-blue-600';
-                let c = `<div class="popup-content"><h3 class="text-lg font-semibold">${tree.species}</h3><p class="text-sm text-gray-600"><strong>Type:</strong> ${tree.type}</p>`;
-                if (tree.notes) c += `<p class="text-sm mt-1"><strong>Notes:</strong> ${tree.notes}</p>`;
-                if (tree.imageUrl) c += `<img src="${tree.imageUrl}" alt="${tree.species}" class="popup-image mt-2">`;
-                c += `<button class="toggle-reminder-btn text-xs text-white px-2 py-1 rounded mt-3 ${reminderButtonClass}" data-tree-id="${tree.id}"><i class="fas ${tree.needsAttention ? 'fa-bell-slash' : 'fa-bell'} mr-1"></i>${reminderButtonText}</button>`;
-                c += `<div class="mt-3 pt-2 border-t border-gray-200 flex justify-end space-x-2"><button class="popup-edit-btn text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded" data-tree-id="${tree.id}" aria-label="Edit tree"><i class="fas fa-edit mr-1"></i>Edit</button><button class="popup-delete-btn text-xs text-red-600 hover:text-red-800 px-2 py-1 rounded" data-tree-id="${tree.id}" aria-label="Delete tree"><i class="fas fa-trash-alt mr-1"></i>Delete</button></div>`;
-                c += `</div>`;
-                return c;
-            }
-            function attachPopupListeners(treeId) {
-                 const popupNode = document.querySelector(`.leaflet-popup-content`);
-                 if (!popupNode) { console.error("Cannot find popup content node to attach listeners."); return; }
-                 // Reminder Button
-                 const reminderBtn = popupNode.querySelector(`.toggle-reminder-btn[data-tree-id="${treeId}"]`);
-                 if (reminderBtn) { reminderBtn.replaceWith(reminderBtn.cloneNode(true)); popupNode.querySelector(`.toggle-reminder-btn[data-tree-id="${treeId}"]`).addEventListener('click', handleReminderToggle); }
-                 else { console.warn("Reminder button not found in popup"); }
-                 // Edit Button
-                 const editBtn = popupNode.querySelector(`.popup-edit-btn[data-tree-id="${treeId}"]`);
-                 if (editBtn) { editBtn.replaceWith(editBtn.cloneNode(true)); popupNode.querySelector(`.popup-edit-btn[data-tree-id="${treeId}"]`).addEventListener('click', handleEditTree); }
-                 else { console.warn("Edit button not found in popup"); }
-                 // Delete Button
-                 const deleteBtn = popupNode.querySelector(`.popup-delete-btn[data-tree-id="${treeId}"]`);
-                 if (deleteBtn) { deleteBtn.replaceWith(deleteBtn.cloneNode(true)); popupNode.querySelector(`.popup-delete-btn[data-tree-id="${treeId}"]`).addEventListener('click', handleDeleteTree); }
-                 else { console.warn("Delete button not found in popup"); }
-            }
+            function addTreeMarker(tree) { const marker = L.marker([tree.location.lat, tree.location.lng]).addTo(map); markers[tree.id] = marker; marker.on('popupopen', () => attachPopupListeners(tree.id)); marker.bindPopup(() => createPopupContent(tree)); }
+            function createPopupContent(tree) { const reminderButtonText = tree.needsAttention ? 'Remove Reminder' : 'Add Reminder'; const reminderButtonClass = tree.needsAttention ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-blue-500 hover:bg-blue-600'; let c = `<div class="popup-content"><h3 class="text-lg font-semibold">${tree.species}</h3><p class="text-sm text-gray-600"><strong>Type:</strong> ${tree.type}</p>`; if (tree.notes) c += `<p class="text-sm mt-1"><strong>Notes:</strong> ${tree.notes}</p>`; if (tree.imageUrl) c += `<img src="${tree.imageUrl}" alt="${tree.species}" class="popup-image mt-2">`; c += `<button class="toggle-reminder-btn text-xs text-white px-2 py-1 rounded mt-3 ${reminderButtonClass}" data-tree-id="${tree.id}"><i class="fas ${tree.needsAttention ? 'fa-bell-slash' : 'fa-bell'} mr-1"></i>${reminderButtonText}</button>`; c += `<div class="mt-3 pt-2 border-t border-gray-200 flex justify-end space-x-2"><button class="popup-edit-btn text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded" data-tree-id="${tree.id}" aria-label="Edit tree"><i class="fas fa-edit mr-1"></i>Edit</button><button class="popup-delete-btn text-xs text-red-600 hover:text-red-800 px-2 py-1 rounded" data-tree-id="${tree.id}" aria-label="Delete tree"><i class="fas fa-trash-alt mr-1"></i>Delete</button></div>`; c += `</div>`; return c; }
+            function attachPopupListeners(treeId) { const popupNode = document.querySelector(`.leaflet-popup-content`); if (!popupNode) { console.error("Cannot find popup content node to attach listeners."); return; } const reminderBtn = popupNode.querySelector(`.toggle-reminder-btn[data-tree-id="${treeId}"]`); if (reminderBtn) { reminderBtn.replaceWith(reminderBtn.cloneNode(true)); popupNode.querySelector(`.toggle-reminder-btn[data-tree-id="${treeId}"]`).addEventListener('click', handleReminderToggle); } else { console.warn("Reminder button not found in popup"); } const editBtn = popupNode.querySelector(`.popup-edit-btn[data-tree-id="${treeId}"]`); if (editBtn) { editBtn.replaceWith(editBtn.cloneNode(true)); popupNode.querySelector(`.popup-edit-btn[data-tree-id="${treeId}"]`).addEventListener('click', handleEditTree); } else { console.warn("Edit button not found in popup"); } const deleteBtn = popupNode.querySelector(`.popup-delete-btn[data-tree-id="${treeId}"]`); if (deleteBtn) { deleteBtn.replaceWith(deleteBtn.cloneNode(true)); popupNode.querySelector(`.popup-delete-btn[data-tree-id="${treeId}"]`).addEventListener('click', handleDeleteTree); } else { console.warn("Delete button not found in popup"); } }
             function handleReminderToggle(event) { const b=event.target.closest('button'); const tId=b.getAttribute('data-tree-id'); const tIdx=trees.findIndex(t=>t.id===tId); if(tIdx!==-1){trees[tIdx].needsAttention=!trees[tIdx].needsAttention; saveTreesToLocalStorage(); const m=markers[tId]; if(m&&m.isPopupOpen()){m.setPopupContent(createPopupContent(trees[tIdx])); attachPopupListeners(tId); } populateLists(); showNotification(trees[tIdx].needsAttention?'Reminder added!':'Reminder removed.');} }
             function handleEditTree(event) { const button = event.target.closest('button'); const treeId = button.dataset.treeId; openEditForm(treeId); }
             function handleDeleteTree(event) { const button = event.target.closest('button'); const treeId = button.dataset.treeId; const treeIndex = trees.findIndex(t => t.id === treeId); if (treeIndex === -1) { console.error("Tree to delete not found:", treeId); return; } const treeSpecies = trees[treeIndex].species; if (!window.confirm(`Are you sure you want to delete the ${treeSpecies} tree? This cannot be undone.`)) { return; } console.log("Deleting tree:", treeId); map.closePopup(); const marker = markers[treeId]; if (marker) { map.removeLayer(marker); delete markers[treeId]; console.log("Marker removed"); } else { console.warn("Marker not found for deletion:", treeId); } trees.splice(treeIndex, 1); console.log("Tree removed from array"); try { saveTreesToLocalStorage(); console.log("LocalStorage updated"); } catch (error) { console.error("LocalStorage Error on delete:", error); showNotification("Error saving deletion."); } populateLists(); console.log("Lists updated"); showNotification(`"${treeSpecies}" tree deleted.`); }
-
-            // List Population (with Null Checks)
-            function populateLists() {
-                if (!spottedList || !plantedList || !remindersList || !spottedCountBadge || !plantedCountBadge || !reminderCountBadge) { console.error("One or more list/badge elements not found at the start of populateLists. Aborting."); return; }
-                spottedList.innerHTML=''; plantedList.innerHTML=''; remindersList.innerHTML='';
-                let sc=0, pc=0, rc=0;
-                const sorted=[...trees].sort((a,b)=>a.species.localeCompare(b.species));
-                sorted.forEach(tree=>{ const itemHTML=`<span class="flex-grow mr-2 overflow-hidden"><i class="fas fa-tree mr-2 ${tree.type==='Planted'?'text-blue-600':'text-green-600'}"></i><span class="font-medium">${tree.species}</span>${tree.notes?`<span class="text-xs text-gray-500 block ml-5 truncate" title="${tree.notes}">(${tree.notes.substring(0,30)}${tree.notes.length>30?'...':''})</span>`:''}</span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`; const action=()=>{const targetTree=trees.find(t=>t.id===tree.id); if(targetTree){setBottomSheetState('closed'); map.setView(targetTree.location, 17, {animate:true}); setTimeout(()=>{if(markers[targetTree.id]) markers[targetTree.id].openPopup();}, 300); }}; const listItem=document.createElement('li'); listItem.className='list-item'; listItem.innerHTML=itemHTML; listItem.querySelector('.view-on-map-btn').addEventListener('click',action); if(tree.type==='Spotted'){ spottedList.appendChild(listItem); sc++;} else if(tree.type==='Planted'){ plantedList.appendChild(listItem); pc++;} if(tree.needsAttention){const reminderItem=document.createElement('li'); reminderItem.className='list-item'; reminderItem.innerHTML=`<span class="flex-grow mr-2 overflow-hidden"><i class="fas fa-bell mr-2 text-orange-500"></i><span class="font-medium">${tree.species}</span> <span class="text-xs text-gray-500">(${tree.type})</span></span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`; reminderItem.querySelector('.view-on-map-btn').addEventListener('click',action); remindersList.appendChild(reminderItem); rc++;}});
-                spottedCountBadge.textContent=sc; plantedCountBadge.textContent=pc; reminderCountBadge.textContent=rc;
-                const placeholderHTML='<li class="text-gray-500 italic p-4 text-center">Nothing here yet.</li>';
-                if(sc===0) spottedList.innerHTML=placeholderHTML; if(pc===0) plantedList.innerHTML=placeholderHTML; if(rc===0) remindersList.innerHTML=placeholderHTML;
-            }
+             // List Population (with Null Checks)
+            function populateLists() { if (!spottedList || !plantedList || !remindersList || !spottedCountBadge || !plantedCountBadge || !reminderCountBadge) { console.error("One or more list/badge elements not found at the start of populateLists. Aborting."); return; } spottedList.innerHTML=''; plantedList.innerHTML=''; remindersList.innerHTML=''; let sc=0, pc=0, rc=0; const sorted=[...trees].sort((a,b)=>a.species.localeCompare(b.species)); sorted.forEach(tree=>{ const itemHTML=`<span class="flex-grow mr-2 overflow-hidden"><i class="fas fa-tree mr-2 ${tree.type==='Planted'?'text-blue-600':'text-green-600'}"></i><span class="font-medium">${tree.species}</span>${tree.notes?`<span class="text-xs text-gray-500 block ml-5 truncate" title="${tree.notes}">(${tree.notes.substring(0,30)}${tree.notes.length>30?'...':''})</span>`:''}</span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`; const action=()=>{const targetTree=trees.find(t=>t.id===tree.id); if(targetTree){setBottomSheetState('closed'); map.setView(targetTree.location, 17, {animate:true}); setTimeout(()=>{if(markers[targetTree.id]) markers[targetTree.id].openPopup();}, 300); }}; const listItem=document.createElement('li'); listItem.className='list-item'; listItem.innerHTML=itemHTML; listItem.querySelector('.view-on-map-btn').addEventListener('click',action); if(tree.type==='Spotted'){ spottedList.appendChild(listItem); sc++;} else if(tree.type==='Planted'){ plantedList.appendChild(listItem); pc++;} if(tree.needsAttention){const reminderItem=document.createElement('li'); reminderItem.className='list-item'; reminderItem.innerHTML=`<span class="flex-grow mr-2 overflow-hidden"><i class="fas fa-bell mr-2 text-orange-500"></i><span class="font-medium">${tree.species}</span> <span class="text-xs text-gray-500">(${tree.type})</span></span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`; reminderItem.querySelector('.view-on-map-btn').addEventListener('click',action); remindersList.appendChild(reminderItem); rc++;}}); spottedCountBadge.textContent=sc; plantedCountBadge.textContent=pc; reminderCountBadge.textContent=rc; const placeholderHTML='<li class="text-gray-500 italic p-4 text-center">Nothing here yet.</li>'; if(sc===0) spottedList.innerHTML=placeholderHTML; if(pc===0) plantedList.innerHTML=placeholderHTML; if(rc===0) remindersList.innerHTML=placeholderHTML; }
             // Notification
             function showNotification(message) { document.getElementById('notification-text').textContent=message; notification.classList.remove('translate-x-full'); notification.classList.add('translate-x-0'); setTimeout(()=>{notification.classList.remove('translate-x-0'); notification.classList.add('translate-x-full');},3000); }
             // Load existing data
@@ -410,81 +342,32 @@
                 setBottomSheetState('state-handle', 'main-menu-view');
 
                 // Header Menu Button Listener
-                headerMenuBtn.addEventListener('click', () => {
-                    showNotification("Menu button clicked! (TBD)");
-                     if (currentBottomSheetState === 'closed' || currentBottomSheetState === 'state-handle') {
-                        setBottomSheetState('state-list-partial', 'main-menu-view');
-                     } else {
-                        setBottomSheetState('state-handle', 'main-menu-view');
-                     }
-                });
-
+                headerMenuBtn.addEventListener('click', () => { showNotification("Menu button clicked! (TBD)"); if (currentBottomSheetState === 'closed' || currentBottomSheetState === 'state-handle') { setBottomSheetState('state-list-partial', 'main-menu-view'); } else { setBottomSheetState('state-handle', 'main-menu-view'); } });
                 // Bottom Sheet Listeners
                 bottomSheet.querySelector('.bottom-sheet-handle').addEventListener('click', () => { if (currentBottomSheetState === 'state-handle') { setBottomSheetState(currentBottomSheetView === 'main-menu-view' ? 'state-list-partial' : 'state-list-full', currentBottomSheetView); } else if (currentBottomSheetState === 'state-list-partial') { setBottomSheetState('state-list-full', currentBottomSheetView); } else { setBottomSheetState('state-handle', 'main-menu-view'); } });
                 mainMenuButtons.forEach(b => b.addEventListener('click', () => setBottomSheetState('state-list-full', b.dataset.viewTarget)));
                 backButtons.forEach(b => b.addEventListener('click', () => setBottomSheetState('state-list-partial', 'main-menu-view')));
-                closeButtons.forEach(b => b.addEventListener('click', () => { setBottomSheetState('closed'); editTreeIdInput.value = ''; })); // Clear edit state
-
+                closeButtons.forEach(b => b.addEventListener('click', () => { setBottomSheetState('closed'); editTreeIdInput.value = ''; }));
                 // FAB Listeners
                 locateFab.addEventListener('click', () => { if (lastKnownLocation) { map.setView(lastKnownLocation, 16, { animate: true }); } else { showNotification("Your location is not available yet."); } });
                 addTreeFab.addEventListener('click', (e) => { e.stopPropagation(); addFabContainer.classList.toggle('expanded'); if (addFabContainer.classList.contains('expanded')) { setBottomSheetState('closed'); } });
                 document.addEventListener('click', (e) => { if (!addFabContainer.contains(e.target) && addFabContainer.classList.contains('expanded')) { addFabContainer.classList.remove('expanded'); } });
-
                 // Simulated Drag Listeners
                 subFabs.forEach(fab => { fab.addEventListener('mousedown', startDrag); fab.addEventListener('touchstart', startDrag, { passive: false }); });
                 document.addEventListener('mousemove', dragMove);
                 document.addEventListener('touchmove', dragMove, { passive: false });
                 document.addEventListener('mouseup', endDrag);
                 document.addEventListener('touchend', endDrag);
-
                 // Form Listeners
-                cancelFormBtn.addEventListener('click', () => { setBottomSheetState('closed'); treeForm.reset(); imagePreview.classList.add('hidden'); editTreeIdInput.value = ''; }); // Clear edit state
+                cancelFormBtn.addEventListener('click', () => { setBottomSheetState('closed'); treeForm.reset(); imagePreview.classList.add('hidden'); editTreeIdInput.value = ''; });
                 treeForm.addEventListener('submit', (e) => {
-                    console.log("Form submit event triggered.");
-                    e.preventDefault();
-                    const editingTreeId = editTreeIdInput.value;
-                    const lat = parseFloat(latInput.value); const lng = parseFloat(lngInput.value); const type = typeSelect.value; const species = speciesInput.value; const notes = notesInput.value; const imageFile = imageInput.files[0]; let imageDataUrl = '';
+                    console.log("Form submit event triggered."); e.preventDefault(); const editingTreeId = editTreeIdInput.value; const lat = parseFloat(latInput.value); const lng = parseFloat(lngInput.value); const type = typeSelect.value; const species = speciesInput.value; const notes = notesInput.value; const imageFile = imageInput.files[0]; let imageDataUrl = '';
                     console.log(`Submitting: Mode=${editingTreeId ? 'Edit' : 'Add'}, ID=${editingTreeId || 'N/A'}, Type=${type}, Species=${species}, Lat=${lat}, Lng=${lng}, Notes=${notes}, ImageFile=${imageFile ? imageFile.name : 'None'}`);
                     if (!type || !species || isNaN(lat) || isNaN(lng)) { console.error("Validation failed"); showNotification("Error: Please fill required fields."); return; }
-
-                    const processImageAndSave = (saveCallback) => {
-                         if(imageFile){
-                             console.log("Processing new image...");
-                             const reader = new FileReader();
-                             reader.onload = (e) => { console.log("FileReader onload"); imageDataUrl = e.target.result; saveCallback(); };
-                             reader.onerror = (error) => { console.error("FileReader Error:", error); showNotification("Error reading image."); };
-                             reader.readAsDataURL(imageFile);
-                         } else { console.log("No new image."); imageDataUrl = null; saveCallback(); }
-                    };
-
-                    if (editingTreeId) { // --- Edit Logic ---
-                         console.log("Executing EDIT logic");
-                         const treeIndex = trees.findIndex(t => t.id === editingTreeId);
-                         if (treeIndex === -1) { console.error("Tree to edit not found"); showNotification("Error: Could not find tree to update."); return; }
-                         processImageAndSave(() => {
-                             const treeToUpdate = trees[treeIndex];
-                             treeToUpdate.species = species; treeToUpdate.notes = notes; treeToUpdate.location.lat = lat; treeToUpdate.location.lng = lng; treeToUpdate.type = type;
-                             if (imageDataUrl !== null) { treeToUpdate.imageUrl = imageDataUrl; } // Only update if new image processed
-                             console.log("Updated tree object:", treeToUpdate);
-                             try { saveTreesToLocalStorage(); console.log("LocalStorage updated (edit)."); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving updated data."); return; }
-                             const marker = markers[editingTreeId]; if (marker) { marker.setPopupContent(createPopupContent(treeToUpdate)); } // Update existing popup content immediately
-                             populateLists(); setBottomSheetState('closed'); treeForm.reset(); imagePreview.classList.add('hidden'); editTreeIdInput.value = '';
-                             showNotification(`"${species}" tree updated.`);
-                         });
-                    } else { // --- Add Logic ---
-                         console.log("Executing ADD logic");
-                         processImageAndSave(() => {
-                             const newTree = { id: Date.now().toString(), type, species, notes, location: { lat, lng }, imageUrl: imageDataUrl || '', dateAdded: new Date().toISOString(), needsAttention: false };
-                             console.log("New tree object:", newTree);
-                             trees.push(newTree);
-                             try { saveTreesToLocalStorage(); console.log("LocalStorage updated (add)."); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving new data."); return; }
-                             addTreeMarker(newTree); // Add new marker
-                             populateLists(); setBottomSheetState('closed'); treeForm.reset(); imagePreview.classList.add('hidden');
-                             showNotification(`"${species}" tree added.`);
-                         });
-                    }
-                }); // End of submit listener
-
+                    const processImageAndSave = (saveCallback) => { if(imageFile){ console.log("Processing new image..."); const reader = new FileReader(); reader.onload = (e) => { console.log("FileReader onload"); imageDataUrl = e.target.result; saveCallback(); }; reader.onerror = (error) => { console.error("FileReader Error:", error); showNotification("Error reading image."); }; reader.readAsDataURL(imageFile); } else { console.log("No new image."); imageDataUrl = null; saveCallback(); } };
+                    if (editingTreeId) { console.log("Executing EDIT logic"); const treeIndex = trees.findIndex(t => t.id === editingTreeId); if (treeIndex === -1) { console.error("Tree to edit not found"); showNotification("Error: Could not find tree to update."); return; } processImageAndSave(() => { const treeToUpdate = trees[treeIndex]; treeToUpdate.species = species; treeToUpdate.notes = notes; treeToUpdate.location.lat = lat; treeToUpdate.location.lng = lng; treeToUpdate.type = type; if (imageDataUrl !== null) { treeToUpdate.imageUrl = imageDataUrl; } console.log("Updated tree object:", treeToUpdate); try { saveTreesToLocalStorage(); console.log("LocalStorage updated (edit)."); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving updated data."); return; } const marker = markers[editingTreeId]; if (marker) { marker.setPopupContent(createPopupContent(treeToUpdate)); } populateLists(); setBottomSheetState('closed'); treeForm.reset(); imagePreview.classList.add('hidden'); editTreeIdInput.value = ''; showNotification(`"${species}" tree updated.`); }); }
+                    else { console.log("Executing ADD logic"); processImageAndSave(() => { const newTree = { id: Date.now().toString(), type, species, notes, location: { lat, lng }, imageUrl: imageDataUrl || '', dateAdded: new Date().toISOString(), needsAttention: false }; console.log("New tree object:", newTree); trees.push(newTree); try { saveTreesToLocalStorage(); console.log("LocalStorage updated (add)."); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving new data."); return; } addTreeMarker(newTree); populateLists(); setBottomSheetState('closed'); treeForm.reset(); imagePreview.classList.add('hidden'); showNotification(`"${species}" tree added.`); }); }
+                });
                 imageInput.addEventListener('change', (e) => { if (e.target.files.length > 0) { const file = e.target.files[0]; const reader = new FileReader(); reader.onload = (e) => { previewImg.src = e.target.result; imagePreview.classList.remove('hidden'); }; reader.readAsDataURL(file); } else { imagePreview.classList.add('hidden'); } });
 
             } // End of initializeApp
