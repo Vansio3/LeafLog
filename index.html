@@ -137,13 +137,13 @@
         .fab i { font-size: 24px; transition: transform 0.3s ease; }
 
         /* Locate FAB Container */
-        .locate-fab-container { position: fixed; bottom: 20px; right: 15px; z-index: 1000; }
+        .locate-fab-container { position: fixed; bottom: 60px; right: 15px; z-index: 1000; }
         .fab-secondary { background-color: #ffffff; color: #374151; width: 48px; height: 48px; }
         .fab-secondary:hover { background-color: #ffffff; }
         .fab-secondary i { font-size: 20px; }
 
         /* Add FAB Container & Expansion */
-        #add-fab-container { position: fixed; bottom: 80px; right: 15px; z-index: 1000; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        #add-fab-container { position: fixed; bottom: 120px; right: 15px; z-index: 1000; display: flex; flex-direction: column; align-items: center; gap: 12px; }
         #add-tree-fab { position: relative; z-index: 1001; }
         #add-fab-container.expanded #add-tree-fab i { transform: rotate(45deg); }
 
@@ -371,7 +371,7 @@
     </div> <!-- End of Bottom Sheet -->
 
     <!-- Notification -->
-    <div id="notification" class="fixed top-16 right-4 bg-green-500 text-white p-3 rounded-md shadow-lg transform transition-transform duration-300 translate-x-full no-print" style="z-index: 1002;">
+    <div id="notification" class="fixed top-16 right-0 bg-green-500 text-white p-3 rounded-md shadow-lg transform transition-transform duration-300 translate-x-full no-print" style="z-index: 1002;">
         <p id="notification-text" class="text-sm"></p>
     </div>
 
@@ -552,7 +552,7 @@
             }
 
             // Notification
-            function showNotification(message) { document.getElementById('notification-text').textContent=message; notification.classList.remove('translate-x-full'); notification.classList.add('translate-x-0'); setTimeout(()=>{notification.classList.remove('translate-x-0'); notification.classList.add('translate-x-full');},3000); }
+            function showNotification(message) { document.getElementById('notification-text').textContent=message; notification.classList.remove('translate-x-full'); notification.classList.add('-translate-x-4'); setTimeout(()=>{notification.classList.remove('-translate-x-4'); notification.classList.add('translate-x-full');},3000); }
             // Load existing data
             function loadExistingTrees() { trees.forEach(tree => { if (tree.needsAttention === undefined) tree.needsAttention = false; addTreeMarker(tree); }); }
 
