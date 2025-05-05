@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeafLog - Tree Mapping Application</title>
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            height: calc(100vh - 60px);
+            width: 100%;
+            z-index: 1;
+        }
+        .form-container {
+            z-index: 10;
+            display: none;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 90%;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .popup-image {
+            max-width: 100%;
+            max-height: 150px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+        .leaflet-popup-content {
+            min-width: 200px;
+        }
+        @media print {
+            #map {
+                height: 95vh;
+                page-break-inside: avoid;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .header {
+                position: relative !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <header class="bg-green-700 text-white p-4 shadow-md header">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold"><i class="fas fa-leaf mr-2"></i>LeafLog</h1>
+            <p class="text-sm">Mapping Your Botanical Journey</p>
+        </div>
+    </header>
+
+    <div id="map"></div>
+
+    <div id="form-container" class="form-container p-5">
+        <h2 class="text-xl font-bold mb-4 text-green-700">Add New Tree</h2>
+        <form id="tree-form" class="space-y-4">
+            <input type="hidden" id="lat" name="lat">
+            <input type="hidden" id="lng" name="lng">
+            
+            <div>
+                <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+                <select id="type" name="type" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                    <option value="" disabled selected>Select tree type</option>
+                    <option value="Spotted">Spotted</option>
+                    <option value="Planted">Planted</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="species" class="block text-sm font-medium text-gray-700 mb-1">Species *</label>
+                <input type="text" id="species" name="species" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., Oak, Maple, Pine">
+            </div>
+            
+            <div>
+                <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea id="notes" name="notes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="Any observations or additional information..."></textarea>
+            </div>
+            
+            <div>
+                <label for="image" class="block text-sm font-medium text-gray-700 mb-1">Photo (Optional)</label>
+                <input type="file" id="image" name="image" accept="image/*" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                <div id="image-preview" class="mt-2 hidden">
+                    <img id="preview-img" src="#" alt="Preview" class="h-40 object-cover rounded-md">
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+                <button type="button" id="cancel-btn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">Save Tree</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="notification" class="fixed top-5 right-5 bg-green-500 text-white p-4 rounded-md shadow-lg transform transition-transform duration-300 translate-x-full">
+        <p id="notification-text"></p>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        const map = L.map('map').setView([40.7128, -74.0060], 13); // Default to NYC
+        
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Try to get user's location
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    map.setView([position.coords.latitude, position.coords.longitude], 13);
+                },
+                error => {
+                    console.log("Could not get location, using default", error);
+                }
+            );
+        }
+
+        // Variables and DOM references
+        const formContainer = document.getElementById('form-container');
+        const treeForm = document.getElementById('tree-form');
+        const latInput = document.getElementById('lat');
+        const lngInput = document.getElementById('lng');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const imageInput = document.getElementById('image');
+        const imagePreview = document.getElementById('image-preview');
+        const previewImg = document.getElementById('preview-img');
+        const notification = document.getElementById('notification');
+        
+        // Tree data storage (using localStorage)
+        let trees = JSON.parse(localStorage.getItem('leaflog_trees') || '[]');
+        
+        // Function to show form at clicked location
+        function showAddForm(e) {
+            latInput.value = e.latlng.lat;
+            lngInput.value = e.latlng.lng;
+            formContainer.style.display = 'block';
+        }
+        
+        // Map click event to show form
+        map.on('click', showAddForm);
+        
+        // Cancel button click event
+        cancelBtn.addEventListener('click', () => {
+            formContainer.style.display = 'none';
+            treeForm.reset();
+            imagePreview.classList.add('hidden');
+        });
+        
+        // Image preview functionality
+        imageInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = (e) => {
+                    previewImg.src = e.target.result;
+                    imagePreview.classList.remove('hidden');
+                };
+                
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.classList.add('hidden');
+            }
+        });
+        
+        // Form submission
+        treeForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const lat = parseFloat(latInput.value);
+            const lng = parseFloat(lngInput.value);
+            const type = document.getElementById('type').value;
+            const species = document.getElementById('species').value;
+            const notes = document.getElementById('notes').value;
+            
+            // Handle image (if any)
+            const imageFile = imageInput.files[0];
+            let imageDataUrl = '';
+            
+            function saveTree() {
+                // Create tree object
+                const tree = {
+                    id: Date.now().toString(),
+                    type,
+                    species,
+                    notes,
+                    location: { lat, lng },
+                    imageUrl: imageDataUrl,
+                    dateAdded: new Date().toISOString()
+                };
+                
+                // Add to local storage
+                trees.push(tree);
+                localStorage.setItem('leaflog_trees', JSON.stringify(trees));
+                
+                // Add marker to map
+                addTreeMarker(tree);
+                
+                // Reset and hide form
+                formContainer.style.display = 'none';
+                treeForm.reset();
+                imagePreview.classList.add('hidden');
+                
+                // Show notification
+                showNotification('Tree added successfully!');
+            }
+            
+            if (imageFile) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imageDataUrl = e.target.result;
+                    saveTree();
+                };
+                reader.readAsDataURL(imageFile);
+            } else {
+                saveTree();
+            }
+        });
+        
+        // Function to add a tree marker to the map
+        function addTreeMarker(tree) {
+            const marker = L.marker([tree.location.lat, tree.location.lng]).addTo(map);
+            
+            let popupContent = `
+                <div class="popup-content">
+                    <h3 class="text-lg font-semibold">${tree.species}</h3>
+                    <p class="text-sm text-gray-600"><strong>Type:</strong> ${tree.type}</p>
+            `;
+            
+            if (tree.notes) {
+                popupContent += `<p class="text-sm mt-2"><strong>Notes:</strong> ${tree.notes}</p>`;
+            }
+            
+            if (tree.imageUrl) {
+                popupContent += `<img src="${tree.imageUrl}" alt="${tree.species}" class="popup-image">`;
+            }
+            
+            popupContent += `</div>`;
+            
+            marker.bindPopup(popupContent);
+        }
+        
+        // Function to show notification
+        function showNotification(message) {
+            document.getElementById('notification-text').textContent = message;
+            notification.style.transform = 'translateX(0)';
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+            }, 3000);
+        }
+        
+        // Load existing trees on page load
+        function loadExistingTrees() {
+            trees.forEach(tree => {
+                addTreeMarker(tree);
+            });
+        }
+        
+        // Initialize the app
+        loadExistingTrees();
+    </script>
+</body>
+</html>
