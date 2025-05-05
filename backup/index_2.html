@@ -9,37 +9,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <style>
         /* Base styles */
-        body, html {
-            height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            /* Disable Text Selection */
-            -webkit-user-select: none; /* Safari */
-            -moz-user-select: none; /* Firefox */
-            -ms-user-select: none; /* IE10+/Edge */
-            user-select: none; /* Standard */
-        }
+        body, html { height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         #map { height: 100vh; width: 100%; z-index: 1; }
         .header { position: fixed; top: 0; left: 0; right: 0; z-index: 10; height: 50px; }
-
-        /* Disable Focus Outline/Highlight Globally */
-        *:focus {
-            outline: none !important;
-            box-shadow: none !important;
-        }
-        button:focus, select:focus, input:focus, textarea:focus {
-             outline: none !important;
-             box-shadow: none !important;
-             /* Override potential Tailwind focus rings */
-             --tw-ring-offset-shadow: none !important;
-             --tw-ring-shadow: none !important;
-             box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000) !important;
-        }
-
-        /* Disable Tap Highlight */
-        button, a, input, select, textarea, .fab, .sub-fab, .sidebar-category-trigger, .view-on-map-btn, .leaflet-popup-content button {
-            -webkit-tap-highlight-color: transparent;
-             tap-highlight-color: transparent; /* Future-proofing */
-        }
-
 
         /* --- Sidebar Menu --- */
         #sidebar-menu {
@@ -79,15 +51,13 @@
          #sidebar-close-btn {
              background: none; border: none; font-size: 1.4rem; color: #6b7280; cursor: pointer; padding: 5px;
          }
-         /* Remove hover effects */
-         #sidebar-close-btn:hover { color: #6b7280; }
-
         .sidebar-content-wrapper { /* Container for views */
             overflow-y: auto; /* Allow this part to scroll */
             flex-grow: 1;
         }
         .sidebar-view {
             display: none; /* Hide views by default */
+            /* Padding applied here or within the view as needed */
         }
         .sidebar-view.visible {
             display: block; /* Show active view */
@@ -101,8 +71,7 @@
              border: 1px solid #e5e7eb; border-radius: 6px; background-color: white;
              cursor: pointer; transition: background-color 0.2s;
          }
-         /* Remove hover effect */
-         .sidebar-category-trigger:hover { background-color: white; }
+         .sidebar-category-trigger:hover { background-color: #f3f4f6; }
          .sidebar-category-trigger span:first-child { font-weight: 500; color: #374151; display: flex; align-items: center; }
          .sidebar-category-trigger .count-badge { background-color: #e0e0e0; color: #555; padding: 0.1rem 0.5rem; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
 
@@ -113,32 +82,26 @@
          .sidebar-list-header h3 { font-size: 1rem; font-weight: 600; color: #333; margin: 0; flex-grow: 1; text-align: center; }
          .sidebar-back-btn { background: none; border: none; font-size: 1.2rem; color: #4b5563; cursor: pointer; padding: 5px; min-width: 30px; text-align: left;}
          .sidebar-list-header span { min-width: 30px; } /* Spacer for centering title */
-         /* Remove hover effects */
-         .sidebar-back-btn:hover { color: #4b5563; }
 
         .sidebar-list { list-style: none; padding: 0; margin: 0; }
+         /* Add padding to the UL container within list views if needed */
          #sidebar-spotted-view .sidebar-list,
          #sidebar-planted-view .sidebar-list,
          #sidebar-reminders-view .sidebar-list {
-             padding: 0.5rem 1rem 1rem 1rem;
+             padding: 0.5rem 1rem 1rem 1rem; /* Example padding */
          }
 
 
         /* FAB General Styles */
         .fab { background-color: #16a34a; color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); cursor: pointer; transition: all 0.3s ease; border: none; }
-        /* Remove hover/active effects */
-        .fab:hover { background-color: #16a34a; } /* Keep original bg */
-        .fab:active {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Restore original shadow */
-            transform: none; /* Remove translateY */
-        }
+        .fab:hover { background-color: #15803d; }
+        .fab:active { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); transform: translateY(1px); }
         .fab i { font-size: 24px; transition: transform 0.3s ease; }
 
         /* Locate FAB Container */
         .locate-fab-container { position: fixed; bottom: 20px; right: 15px; z-index: 1000; }
         .fab-secondary { background-color: #ffffff; color: #374151; width: 48px; height: 48px; }
-        /* Remove hover effect */
-        .fab-secondary:hover { background-color: #ffffff; } /* Keep original bg */
+        .fab-secondary:hover { background-color: #f3f4f6; }
         .fab-secondary i { font-size: 20px; }
 
         /* Add FAB Container & Expansion */
@@ -152,9 +115,8 @@
         #add-fab-container.expanded .sub-fab { position: relative; bottom: auto; right: auto; opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
         #sub-fab-spotted { background-color: #fbbf24; color: #422006; }
         #sub-fab-planted { background-color: #3b82f6; color: white; }
-        /* Remove hover effects */
-        #sub-fab-spotted:hover { background-color: #fbbf24; }
-        #sub-fab-planted:hover { background-color: #3b82f6; }
+        #sub-fab-spotted:hover { background-color: #f59e0b; }
+        #sub-fab-planted:hover { background-color: #2563eb; }
 
         /* Drag Simulation Styles */
         #drag-clone { position: fixed; z-index: 1010; pointer-events: none; opacity: 0.75; width: 45px; height: 45px; font-size: 0.8em; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2px; text-align: center; line-height: 1.1; border-radius: 50%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
@@ -164,48 +126,30 @@
         /* Bottom Sheet (FOR FORM ONLY) */
         #bottom-sheet { position: fixed; bottom: 0; left: 0; right: 0; background-color: white; border-top-left-radius: 16px; border-top-right-radius: 16px; box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15); z-index: 1003; /* Higher z-index than sidebar */ transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(100%); max-height: 90vh; display: flex; flex-direction: column; }
         #bottom-sheet.active { transform: translateY(0); }
+        /* Removed handle styles .bottom-sheet-handle { display: none; } */
         .bottom-sheet-content { padding: 15px; overflow-y: auto; flex-grow: 1; }
         .bottom-sheet-view { display: none; } .bottom-sheet-view.visible { display: block; } /* Only add-form-view will use this */
         .bottom-sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eee; }
         .bottom-sheet-header h3 { font-size: 1.2rem; font-weight: 600; color: #333; margin: 0; flex-grow: 1; text-align: center; }
         .bottom-sheet-header span { min-width: 30px; }
         .bottom-sheet-close-btn { background: none; border: none; font-size: 1.3rem; color: #6b7280; cursor: pointer; padding: 5px; min-width: 30px; text-align: right; }
-        /* Remove hover effects */
-        .bottom-sheet-close-btn:hover { color: #6b7280; }
         #add-form-view { padding-top: 0; } #add-form-view form { margin-top: 0; }
 
         /* List Item Styles (used in sidebar) */
         .list-item { padding: 10px 5px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
         .list-item:last-child { border-bottom: none; }
         .list-item .view-on-map-btn { background: none; border: none; color: #3498db; cursor: pointer; font-size: 0.9em; margin-left: 8px; padding: 0.25rem; white-space: nowrap; }
-        /* Remove hover effects */
-        .list-item .view-on-map-btn:hover { text-decoration: none; color: #3498db; }
+        .list-item .view-on-map-btn:hover { text-decoration: underline; }
 
         /* Popup Styles */
         .popup-image { max-width: 100%; max-height: 150px; object-fit: cover; border-radius: 4px; margin-top: 8px; }
         .leaflet-popup-content { min-width: 220px; padding-bottom: 8px !important; }
-        /* Remove hover effects for popup buttons */
-        .popup-edit-btn:hover { color: #3b82f6 !important; text-decoration: none !important; } /* Tailwind blue-600 */
-        .popup-delete-btn:hover { color: #dc2626 !important; text-decoration: none !important; } /* Tailwind red-600 */
-        .toggle-reminder-btn { transition: background-color 0.2s; }
-        /* Remove hover effects for reminder toggle, adjust classes */
-        .toggle-reminder-btn[data-tree-id]:hover {
-            /* Keep original color based on state */
-        }
-        .toggle-reminder-btn.bg-yellow-500:hover { background-color: #f59e0b !important; } /* Keep original yellow hover if desired, or set to bg-yellow-500 */
-        .toggle-reminder-btn.bg-blue-500:hover { background-color: #3b82f6 !important; } /* Keep original blue hover if desired, or set to bg-blue-500 */
-
-        /* Override specific hover classes used in createPopupContent if necessary */
-        .bg-yellow-500.hover\:bg-yellow-600:hover { background-color: #f59e0b !important; } /* or #facc15 if no change */
-        .bg-blue-500.hover\:bg-blue-600:hover { background-color: #3b82f6 !important; } /* or #3b82f6 */
-        .text-blue-600.hover\:text-blue-800:hover { color: #3b82f6 !important; } /* or #3b82f6 */
-        .text-red-600.hover\:text-red-800:hover { color: #dc2626 !important; } /* or #dc2626 */
 
         /* Current Location Icon */
         .current-location-div-icon { background: none; border: none; }
 
         /* Print Styles */
-        @media print { body, html { height: auto; overflow: visible; user-select: auto; /* Allow selection for print */ } #map { height: 95vh !important; page-break-inside: avoid; width: 100% !important; } .no-print { display: none !important; } .header { position: relative !important; } #bottom-sheet, .locate-fab-container, #add-fab-container, #sidebar-menu { display: none !important; } .current-location-div-icon { display: none !important; } }
+        @media print { body, html { height: auto; overflow: visible; } #map { height: 95vh !important; page-break-inside: avoid; width: 100% !important; } .no-print { display: none !important; } .header { position: relative !important; } #bottom-sheet, .locate-fab-container, #add-fab-container, #sidebar-menu { display: none !important; } .current-location-div-icon { display: none !important; } }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -213,8 +157,7 @@
     <header class="bg-green-700 text-white p-3 shadow-md header no-print">
         <div class="container mx-auto flex justify-between items-center">
             <h1 class="text-lg font-bold"><i class="fas fa-leaf mr-1"></i>LeafLog</h1>
-            <!-- Removed hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-white -->
-            <button id="header-menu-btn" class="text-white p-2 rounded" aria-label="Open menu">
+            <button id="header-menu-btn" class="text-white p-2 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-white" aria-label="Open menu">
                 <i class="fas fa-bars text-xl"></i>
             </button>
         </div>
@@ -251,6 +194,7 @@
                          <span id="sidebar-reminder-count" class="count-badge">0</span>
                      </button>
                  </div>
+                 <!-- Add other main menu items here if needed -->
              </div>
 
              <!-- Spotted List View (Hidden Initially) -->
@@ -326,35 +270,29 @@
                     <input type="hidden" id="lng" name="lng">
                     <div>
                        <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type *</label>
-                       <!-- Removed focus:outline-none focus:ring-green-500 focus:border-green-500 -->
-                       <select id="type" name="type" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100" disabled>
+                       <select id="type" name="type" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 bg-gray-100" disabled>
                            <option value="Spotted">Spotted</option>
                            <option value="Planted">Planted</option>
                        </select>
                     </div>
                     <div>
                        <label for="species" class="block text-sm font-medium text-gray-700 mb-1">Species *</label>
-                       <!-- Removed focus:outline-none focus:ring-green-500 focus:border-green-500 -->
-                       <input type="text" id="species" name="species" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" placeholder="e.g., Oak, Maple">
+                       <input type="text" id="species" name="species" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., Oak, Maple">
                     </div>
                     <div>
                        <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                       <!-- Removed focus:outline-none focus:ring-green-500 focus:border-green-500 -->
-                       <textarea id="notes" name="notes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" placeholder="Observations..."></textarea>
+                       <textarea id="notes" name="notes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="Observations..."></textarea>
                     </div>
                     <div>
                        <label for="image" class="block text-sm font-medium text-gray-700 mb-1">Photo</label>
-                       <!-- Removed focus:outline-none focus:ring-green-500 focus:border-green-500 -->
-                       <input type="file" id="image" name="image" accept="image/*" class="w-full px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm">
+                       <input type="file" id="image" name="image" accept="image/*" class="w-full px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
                        <div id="image-preview" class="mt-2 hidden">
                            <img id="preview-img" src="#" alt="Preview" class="h-32 object-cover rounded-md">
                        </div>
                     </div>
                     <div class="flex justify-end space-x-3 pt-2">
-                       <!-- Removed hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 -->
-                       <button type="button" id="cancel-form-btn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md">Cancel</button>
-                       <!-- Removed hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 -->
-                       <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md">Save Tree</button>
+                       <button type="button" id="cancel-form-btn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500">Cancel</button>
+                       <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">Save Tree</button>
                     </div>
                  </form>
             </div>
@@ -441,27 +379,32 @@
             function closeSidebarMenu() {
                  if (sidebarMenu) {
                      sidebarMenu.classList.remove('open');
+                     // Reset view to main after closing transition (optional)
+                     // setTimeout(() => showSidebarView('sidebar-main-view'), 300);
                  }
             }
              function showSidebarView(viewId) {
                  sidebarViews.forEach(view => {
+                     // Use hidden class for visibility control
                      view.classList.toggle('hidden', view.id !== viewId);
                      view.classList.toggle('visible', view.id === viewId);
                  });
+                 // Update sidebar title based on the view
                  const targetViewElement = document.getElementById(viewId);
-                 const titleElement = targetViewElement?.querySelector('h3');
+                 const titleElement = targetViewElement?.querySelector('h3'); // Get h3 from the target view
                  sidebarTitle.textContent = viewId === 'sidebar-main-view' ? 'Menu' : (titleElement?.textContent || 'Menu');
+
                  currentSidebarView = viewId;
-                 if (sidebarContentWrapper) sidebarContentWrapper.scrollTop = 0;
+                 if (sidebarContentWrapper) sidebarContentWrapper.scrollTop = 0; // Scroll to top
              }
 
              // Bottom Sheet (Form) Management
              function openFormSheet() { if (bottomSheet) bottomSheet.classList.add('active'); }
-             function closeFormSheet() { if (bottomSheet) bottomSheet.classList.remove('active'); editTreeIdInput.value = ''; treeForm.reset(); imagePreview.classList.add('hidden'); previewImg.src = '#'; /* Clear preview */ }
+             function closeFormSheet() { if (bottomSheet) bottomSheet.classList.remove('active'); editTreeIdInput.value = ''; treeForm.reset(); imagePreview.classList.add('hidden'); }
 
             // Form Handling
-            function openAddForm(lat, lng, treeType) { editTreeIdInput.value = ''; addFormTitle.textContent = 'Add New Tree'; latInput.value = lat; lngInput.value = lng; typeSelect.value = treeType; speciesInput.value = ''; notesInput.value = ''; imageInput.value = null; /* Clear file input */ imagePreview.classList.add('hidden'); previewImg.src = '#'; /* Clear preview */ openFormSheet(); speciesInput.focus(); }
-            function openEditForm(treeId) { const tree = trees.find(t => t.id === treeId); if (!tree) { console.error("Tree not found for editing:", treeId); return; } map.closePopup(); editTreeIdInput.value = treeId; addFormTitle.textContent = 'Edit Tree'; latInput.value = tree.location.lat; lngInput.value = tree.location.lng; typeSelect.value = tree.type; speciesInput.value = tree.species; notesInput.value = tree.notes || ''; imageInput.value = null; /* Clear file input */ if (tree.imageUrl) { previewImg.src = tree.imageUrl; imagePreview.classList.remove('hidden'); } else { imagePreview.classList.add('hidden'); previewImg.src = '#'; /* Clear preview */ } openFormSheet(); speciesInput.focus(); }
+            function openAddForm(lat, lng, treeType) { editTreeIdInput.value = ''; addFormTitle.textContent = 'Add New Tree'; latInput.value = lat; lngInput.value = lng; typeSelect.value = treeType; speciesInput.value = ''; notesInput.value = ''; imageInput.value = null; imagePreview.classList.add('hidden'); openFormSheet(); speciesInput.focus(); }
+            function openEditForm(treeId) { const tree = trees.find(t => t.id === treeId); if (!tree) { console.error("Tree not found for editing:", treeId); return; } map.closePopup(); editTreeIdInput.value = treeId; addFormTitle.textContent = 'Edit Tree'; latInput.value = tree.location.lat; lngInput.value = tree.location.lng; typeSelect.value = tree.type; speciesInput.value = tree.species; notesInput.value = tree.notes || ''; imageInput.value = null; if (tree.imageUrl) { previewImg.src = tree.imageUrl; imagePreview.classList.remove('hidden'); } else { imagePreview.classList.add('hidden'); } openFormSheet(); speciesInput.focus(); }
 
             // Local Storage & Marker Management
             function saveTreesToLocalStorage() { localStorage.setItem('leaflog_trees', JSON.stringify(trees)); }
@@ -494,7 +437,9 @@
                         sidebarRemindersList.appendChild(reminderItem); rc++;
                     }
                 });
+                // Update counts in main menu view
                 sidebarSpottedCount.textContent=sc; sidebarPlantedCount.textContent=pc; sidebarReminderCount.textContent=rc;
+                // Set Placeholders
                 const placeholderHTML='<li class="text-gray-500 italic p-4 text-center">Nothing here yet.</li>';
                 if(sc===0) sidebarSpottedList.innerHTML=placeholderHTML;
                 if(pc===0) sidebarPlantedList.innerHTML=placeholderHTML;
@@ -513,7 +458,10 @@
             // --- Event Listeners & Initialization Function ---
             function initializeApp() {
                 loadExistingTrees();
-                populateSidebarMenu();
+                populateSidebarMenu(); // Populate sidebar
+                // Don't open bottom sheet initially
+
+                // --- Add Event Listeners ---
 
                 // Sidebar Menu Listeners
                 headerMenuBtn.addEventListener('click', openSidebarMenu);
@@ -523,6 +471,7 @@
                          closeSidebarMenu();
                      }
                 });
+                // Sidebar View Navigation
                 categoryTriggers.forEach(button => {
                     button.addEventListener('click', () => {
                         const targetViewId = button.dataset.targetView;
@@ -541,7 +490,7 @@
 
                 // FAB Listeners
                 locateFab.addEventListener('click', () => { if (lastKnownLocation) { map.setView(lastKnownLocation, 16, { animate: true }); } else { showNotification("Your location is not available yet."); } });
-                addTreeFab.addEventListener('click', (e) => { e.stopPropagation(); addFabContainer.classList.toggle('expanded'); });
+                addTreeFab.addEventListener('click', (e) => { e.stopPropagation(); addFabContainer.classList.toggle('expanded'); /* Don't close bottom sheet here */ });
                 document.addEventListener('click', (e) => { if (!addFabContainer.contains(e.target) && addFabContainer.classList.contains('expanded')) { addFabContainer.classList.remove('expanded'); } });
 
                 // Simulated Drag Listeners
@@ -551,104 +500,47 @@
                 document.addEventListener('mouseup', endDrag);
                 document.addEventListener('touchend', endDrag);
 
-                // Form Submit Listener (Handles Add/Edit with refined image logic)
+                // Form Submit Listener (handles both Add and Edit)
                 treeForm.addEventListener('submit', (e) => {
                     e.preventDefault();
                     const editingTreeId = editTreeIdInput.value;
-                    const lat = parseFloat(latInput.value); const lng = parseFloat(lngInput.value); const type = typeSelect.value; const species = speciesInput.value; const notes = notesInput.value; const imageFile = imageInput.files[0];
-                    let newImageDataUrl = null; // Use a distinct variable for the *new* potential data URL
-
+                    const lat = parseFloat(latInput.value); const lng = parseFloat(lngInput.value); const type = typeSelect.value; const species = speciesInput.value; const notes = notesInput.value; const imageFile = imageInput.files[0]; let imageDataUrl = '';
                     if (!type || !species || isNaN(lat) || isNaN(lng)) { console.error("Validation failed"); showNotification("Error: Please fill required fields."); return; }
 
                     const processImageAndSave = (saveCallback) => {
-                         if (imageFile) { // Only process if a NEW file was selected
+                         if(imageFile){
                              const reader = new FileReader();
-                             reader.onload = (e) => {
-                                 newImageDataUrl = e.target.result; // Store the new data URL here
-                                 saveCallback();
-                             };
-                             reader.onerror = (error) => {
-                                 console.error("FileReader Error:", error);
-                                 showNotification("Error reading image.");
-                                 // Optionally decide if you want to proceed without the image or stop
-                             };
+                             reader.onload = (e) => { imageDataUrl = e.target.result; saveCallback(); };
+                             reader.onerror = (error) => { console.error("FileReader Error:", error); showNotification("Error reading image."); };
                              reader.readAsDataURL(imageFile);
-                         } else {
-                             // No new image file selected, proceed directly to saveCallback
-                             // newImageDataUrl remains null in this case
-                             saveCallback();
-                         }
+                         } else { imageDataUrl = null; saveCallback(); }
                     };
 
                     if (editingTreeId) { // --- Edit Logic ---
                          const treeIndex = trees.findIndex(t => t.id === editingTreeId);
                          if (treeIndex === -1) { console.error("Tree to edit not found"); showNotification("Error: Could not find tree to update."); return; }
-
-                         processImageAndSave(() => { // Pass the callback
+                         processImageAndSave(() => {
                              const treeToUpdate = trees[treeIndex];
-                             treeToUpdate.species = species;
-                             treeToUpdate.notes = notes;
-                             treeToUpdate.location.lat = lat;
-                             treeToUpdate.location.lng = lng;
-                             treeToUpdate.type = type;
-
-                             // Update image URL *only* if a new image was successfully read
-                             if (newImageDataUrl !== null) {
-                                 treeToUpdate.imageUrl = newImageDataUrl;
-                             }
-                             // --- No 'else' needed: If newImageDataUrl is null (no new file selected),
-                             // --- the existing treeToUpdate.imageUrl is kept untouched.
-
-                             try {
-                                 saveTreesToLocalStorage();
-                             } catch (error) {
-                                 console.error("LocalStorage Error:", error);
-                                 showNotification("Error saving updated data.");
-                                 return;
-                             }
-                             const marker = markers[editingTreeId];
-                             if (marker) {
-                                 marker.setPopupContent(createPopupContent(treeToUpdate));
-                                 // If the popup was open, re-attach listeners after content update
-                                 if (marker.isPopupOpen()) {
-                                    marker.getPopup().on('add', () => attachPopupListeners(treeId));
-                                 }
-                             }
-                             populateSidebarMenu();
-                             closeFormSheet();
+                             treeToUpdate.species = species; treeToUpdate.notes = notes; treeToUpdate.location.lat = lat; treeToUpdate.location.lng = lng; treeToUpdate.type = type;
+                             if (imageDataUrl !== null) { treeToUpdate.imageUrl = imageDataUrl; }
+                             try { saveTreesToLocalStorage(); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving updated data."); return; }
+                             const marker = markers[editingTreeId]; if (marker) { marker.setPopupContent(createPopupContent(treeToUpdate)); }
+                             populateSidebarMenu(); closeFormSheet();
                              showNotification(`"${species}" tree updated.`);
                          });
-
                     } else { // --- Add Logic ---
-                         processImageAndSave(() => { // Pass the callback
-                             const newTree = {
-                                 id: Date.now().toString(),
-                                 type,
-                                 species,
-                                 notes,
-                                 location: { lat, lng },
-                                 imageUrl: newImageDataUrl || '', // Use new URL if available, else empty string
-                                 dateAdded: new Date().toISOString(),
-                                 needsAttention: false
-                             };
+                         processImageAndSave(() => {
+                             const newTree = { id: Date.now().toString(), type, species, notes, location: { lat, lng }, imageUrl: imageDataUrl || '', dateAdded: new Date().toISOString(), needsAttention: false };
                              trees.push(newTree);
-                             try {
-                                 saveTreesToLocalStorage();
-                             } catch (error) {
-                                 console.error("LocalStorage Error:", error);
-                                 showNotification("Error saving new data.");
-                                 return; // Stop if saving failed
-                             }
+                             try { saveTreesToLocalStorage(); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving new data."); return; }
                              addTreeMarker(newTree);
-                             populateSidebarMenu();
-                             closeFormSheet();
+                             populateSidebarMenu(); closeFormSheet();
                              showNotification(`"${species}" tree added.`);
                          });
                     }
                 }); // End of submit listener
 
-
-                imageInput.addEventListener('change', (e) => { if (e.target.files.length > 0) { const file = e.target.files[0]; const reader = new FileReader(); reader.onload = (e) => { previewImg.src = e.target.result; imagePreview.classList.remove('hidden'); }; reader.readAsDataURL(file); } else { previewImg.src = '#'; imagePreview.classList.add('hidden'); } });
+                imageInput.addEventListener('change', (e) => { if (e.target.files.length > 0) { const file = e.target.files[0]; const reader = new FileReader(); reader.onload = (e) => { previewImg.src = e.target.result; imagePreview.classList.remove('hidden'); }; reader.readAsDataURL(file); } else { imagePreview.classList.add('hidden'); } });
 
             } // End of initializeApp
 
