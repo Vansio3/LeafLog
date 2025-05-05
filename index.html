@@ -11,7 +11,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <style>
-        /* --- CSS styles remain the same as the previous version --- */
+        /* --- CSS styles remain the same --- */
         body, html { height: 100%; margin: 0; padding: 0; overflow: hidden; }
         #map { height: calc(100vh - 60px); width: 100%; z-index: 1; }
         .header { position: relative; z-index: 10; }
@@ -38,17 +38,27 @@
         .sidebar-list li:last-child { border-bottom: none; }
         .sidebar-list .view-on-map-btn { background: none; border: none; color: #3498db; cursor: pointer; font-size: 0.9em; margin-left: 8px; padding: 0.25rem; white-space: nowrap; }
         .sidebar-list .view-on-map-btn:hover { text-decoration: underline; }
+         /* Style for the current location marker */
+        .current-location-marker {
+            background-color: rgba(51, 133, 255, 0.4); /* Lighter blue fill */
+            border: 2px solid #3385ff; /* Solid blue border */
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
         @media print {
             #map { height: 95vh; page-break-inside: avoid; }
             .no-print { display: none !important; }
             .header { position: relative !important; }
             #sidebar, #sidebar-toggle-btn { display: none !important; }
+             /* Hide current location marker when printing */
+            .current-location-marker { display: none !important; }
         }
     </style>
 </head>
 <body class="bg-gray-100">
     <header class="bg-green-700 text-white p-4 shadow-md header no-print">
-        <div class="container mx-auto flex justify-between items-center">
+         <!-- ... header content ... -->
+         <div class="container mx-auto flex justify-between items-center">
             <h1 class="text-xl font-bold"><i class="fas fa-leaf mr-2"></i>LeafLog</h1>
             <p class="text-sm">Mapping Your Botanical Journey</p>
         </div>
@@ -56,48 +66,28 @@
 
     <!-- Sidebar (remains the same HTML structure) -->
     <div id="sidebar" class="no-print">
-        <!-- Main Panel -->
+         <!-- ... sidebar panels and content ... -->
+         <!-- Main Panel -->
         <div id="sidebar-main-view" class="sidebar-panel">
-             <div class="sidebar-section mb-6"> /* ... Categories ... */ </div>
-             <div class="sidebar-section"> /* ... Reminders ... */ </div>
-             <!-- Full structure from previous version -->
              <div class="sidebar-section mb-6">
                 <h3 class="font-semibold text-green-700">Tree Lists</h3>
-                <button class="category-trigger w-full text-left" data-view-target="spotted">
-                    <h4 class="text-gray-700">Spotted Trees</h4>
-                    <div><span id="spotted-count" class="count-badge">0</span><i class="fas fa-chevron-right ml-2"></i></div>
-                </button>
-                <button class="category-trigger w-full text-left" data-view-target="planted">
-                    <h4 class="text-gray-700">Planted Trees</h4>
-                     <div><span id="planted-count" class="count-badge">0</span><i class="fas fa-chevron-right ml-2"></i></div>
-                </button>
+                <button class="category-trigger w-full text-left" data-view-target="spotted"><h4 class="text-gray-700">Spotted Trees</h4><div><span id="spotted-count" class="count-badge">0</span><i class="fas fa-chevron-right ml-2"></i></div></button>
+                <button class="category-trigger w-full text-left" data-view-target="planted"><h4 class="text-gray-700">Planted Trees</h4><div><span id="planted-count" class="count-badge">0</span><i class="fas fa-chevron-right ml-2"></i></div></button>
             </div>
             <div class="sidebar-section">
                 <h3 class="font-semibold text-orange-600">Reminders</h3>
-                 <ul id="reminders-list" class="sidebar-list text-sm">
-                     <li class="text-gray-500 italic">No reminders set.</li>
-                </ul>
+                 <ul id="reminders-list" class="sidebar-list text-sm"><li class="text-gray-500 italic">No reminders set.</li></ul>
             </div>
         </div>
-        <!-- Spotted Trees Panel (Submenu) -->
+        <!-- Spotted Trees Panel -->
         <div id="sidebar-spotted-view" class="sidebar-panel hidden">
-            <div class="sidebar-panel-header">
-                 <button class="sidebar-back-btn" aria-label="Back to main menu"><i class="fas fa-arrow-left"></i></button>
-                <h3 class="font-semibold text-green-700 flex-grow">Spotted Trees</h3>
-            </div>
-            <ul id="spotted-list" class="sidebar-list text-sm">
-                <li class="text-gray-500 italic">Loading...</li>
-            </ul>
+            <div class="sidebar-panel-header"><button class="sidebar-back-btn" aria-label="Back to main menu"><i class="fas fa-arrow-left"></i></button><h3 class="font-semibold text-green-700 flex-grow">Spotted Trees</h3></div>
+            <ul id="spotted-list" class="sidebar-list text-sm"><li class="text-gray-500 italic">Loading...</li></ul>
         </div>
-        <!-- Planted Trees Panel (Submenu) -->
+        <!-- Planted Trees Panel -->
         <div id="sidebar-planted-view" class="sidebar-panel hidden">
-             <div class="sidebar-panel-header">
-                 <button class="sidebar-back-btn" aria-label="Back to main menu"><i class="fas fa-arrow-left"></i></button>
-                <h3 class="font-semibold text-green-700 flex-grow">Planted Trees</h3>
-            </div>
-            <ul id="planted-list" class="sidebar-list text-sm">
-                <li class="text-gray-500 italic">Loading...</li>
-            </ul>
+             <div class="sidebar-panel-header"><button class="sidebar-back-btn" aria-label="Back to main menu"><i class="fas fa-arrow-left"></i></button><h3 class="font-semibold text-green-700 flex-grow">Planted Trees</h3></div>
+            <ul id="planted-list" class="sidebar-list text-sm"><li class="text-gray-500 italic">Loading...</li></ul>
         </div>
     </div>
 
@@ -110,38 +100,16 @@
 
     <!-- Form Container (remains the same HTML structure) -->
     <div id="form-container" class="form-container p-5 no-print">
-        <!-- ... Form content from previous version ... -->
-        <h2 class="text-xl font-bold mb-4 text-green-700">Add New Tree</h2>
+        <!-- ... Form content ... -->
+         <h2 class="text-xl font-bold mb-4 text-green-700">Add New Tree</h2>
         <form id="tree-form" class="space-y-4">
-            <input type="hidden" id="lat" name="lat">
-            <input type="hidden" id="lng" name="lng">
-            <div>
-                <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type *</label>
-                <select id="type" name="type" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
-                    <option value="" disabled selected>Select tree type</option>
-                    <option value="Spotted">Spotted</option>
-                    <option value="Planted">Planted</option>
-                </select>
-            </div>
-            <div>
-                <label for="species" class="block text-sm font-medium text-gray-700 mb-1">Species *</label>
-                <input type="text" id="species" name="species" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., Oak, Maple, Pine">
-            </div>
-            <div>
-                <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea id="notes" name="notes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="Any observations or additional information..."></textarea>
-            </div>
-            <div>
-                <label for="image" class="block text-sm font-medium text-gray-700 mb-1">Photo (Optional)</label>
-                <input type="file" id="image" name="image" accept="image/*" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
-                <div id="image-preview" class="mt-2 hidden">
-                    <img id="preview-img" src="#" alt="Preview" class="h-40 object-cover rounded-md">
-                </div>
-            </div>
-            <div class="flex justify-end space-x-3">
-                <button type="button" id="cancel-btn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500">Cancel</button>
-                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">Save Tree</button>
-            </div>
+             <input type="hidden" id="lat" name="lat">
+             <input type="hidden" id="lng" name="lng">
+             <div><label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type *</label><select id="type" name="type" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"><option value="" disabled selected>Select tree type</option><option value="Spotted">Spotted</option><option value="Planted">Planted</option></select></div>
+             <div><label for="species" class="block text-sm font-medium text-gray-700 mb-1">Species *</label><input type="text" id="species" name="species" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="e.g., Oak, Maple, Pine"></div>
+             <div><label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label><textarea id="notes" name="notes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="Any observations or additional information..."></textarea></div>
+             <div><label for="image" class="block text-sm font-medium text-gray-700 mb-1">Photo (Optional)</label><input type="file" id="image" name="image" accept="image/*" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"><div id="image-preview" class="mt-2 hidden"><img id="preview-img" src="#" alt="Preview" class="h-40 object-cover rounded-md"></div></div>
+             <div class="flex justify-end space-x-3"><button type="button" id="cancel-btn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500">Cancel</button><button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">Save Tree</button></div>
         </form>
     </div>
 
@@ -153,26 +121,82 @@
     <!-- Leaflet JS -->
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
-        // Map Initialization
-        const map = L.map('map').setView([42.501511, 27.466138], 13); // <-- CHANGE: Updated coordinates
+        // Map Initialization (Default View)
+        const defaultCoords = [42.501511, 27.466138];
+        const map = L.map('map').setView(defaultCoords, 13);
 
-        // Tile Layer (remains the same)
+        // Tile Layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 19
         }).addTo(map);
 
-        // Geolocation (remains the same - will override setView if successful)
+        // --- Geolocation and Current Location Marker ---
+        let currentLocationMarker = null;
+        let centeredOnLocation = false; // Flag to center map only once
+
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                position => {
-                    map.setView([position.coords.latitude, position.coords.longitude], 13);
+            navigator.geolocation.watchPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const latLng = [lat, lng];
+
+                    // Update or create the marker
+                    if (!currentLocationMarker) {
+                        // Create the marker
+                        currentLocationMarker = L.circleMarker(latLng, {
+                            radius: 8,
+                            // Using CSS class for styling is cleaner
+                            className: 'current-location-marker',
+                            // Fallback styles if CSS fails
+                            // fillColor: '#3388ff',
+                            // color: '#3388ff',
+                            // weight: 2,
+                            // opacity: 0.8,
+                            // fillOpacity: 0.4
+                        }).addTo(map);
+                         // Add a simple popup (optional)
+                        currentLocationMarker.bindPopup("Your current location").openPopup();
+
+                    } else {
+                        // Just update position and maybe popup content
+                        currentLocationMarker.setLatLng(latLng);
+                         // currentLocationMarker.setPopupContent(`Your location (Accuracy: ${position.coords.accuracy.toFixed(0)}m)`);
+                    }
+
+                    // Center map on the *first* successful location fix
+                    if (!centeredOnLocation) {
+                        map.setView(latLng, 16); // Zoom in closer for current location
+                        centeredOnLocation = true;
+                         // Ensure popup shows on first view
+                         if(currentLocationMarker) currentLocationMarker.openPopup();
+                    }
                 },
-                error => {
-                    console.log("Could not get location, using default", error);
+                (error) => {
+                    console.error("Geolocation error: ", error.message);
+                    // Optional: Remove marker if location becomes unavailable?
+                    // if (currentLocationMarker) {
+                    //     map.removeLayer(currentLocationMarker);
+                    //     currentLocationMarker = null;
+                    // }
+                    // If we haven't centered on location yet, ensure we are on default
+                    if (!centeredOnLocation) {
+                        map.setView(defaultCoords, 13);
+                    }
+                     showNotification(`Error getting location: ${error.message}`);
+                },
+                {
+                    enableHighAccuracy: true, // Request high accuracy
+                    timeout: 10000,         // Max time to wait for location (ms)
+                    maximumAge: 0           // Don't use cached location
                 }
             );
+        } else {
+            console.log("Geolocation is not supported by this browser.");
+            // Map remains at default view set initially
         }
+
 
         // --- DOM References (remain the same) ---
         const formContainer = document.getElementById('form-container');
@@ -196,219 +220,61 @@
         const spottedCountBadge = document.getElementById('spotted-count');
         const plantedCountBadge = document.getElementById('planted-count');
 
-        // --- Tree Data Storage (remains the same) ---
+        // --- Tree Data Storage (remain the same) ---
         let trees = JSON.parse(localStorage.getItem('leaflog_trees') || '[]');
         let markers = {};
 
         // --- Sidebar Navigation & Toggling (remain the same) ---
-        function showSidebarPanel(panelId) { /* ... same ... */
-             sidebarPanels.forEach(panel => { panel.id === panelId ? panel.classList.remove('hidden') : panel.classList.add('hidden'); });
-             sidebar.scrollTop = 0;
-        }
-        function closeSidebar() { /* ... same ... */
-            sidebar.classList.remove('open');
-            sidebarToggleBtn.querySelector('i').classList.replace('fa-times', 'fa-bars');
-            showSidebarPanel('sidebar-main-view');
-        }
-        function openSidebar() { /* ... same ... */
-             sidebar.classList.add('open');
-             sidebarToggleBtn.querySelector('i').classList.replace('fa-bars', 'fa-times');
-             showSidebarPanel('sidebar-main-view');
-        }
+        function showSidebarPanel(panelId) { /* ... same ... */ sidebarPanels.forEach(p => {p.id === panelId ? p.classList.remove('hidden') : p.classList.add('hidden');}); sidebar.scrollTop = 0; }
+        function closeSidebar() { /* ... same ... */ sidebar.classList.remove('open'); sidebarToggleBtn.querySelector('i').classList.replace('fa-times', 'fa-bars'); showSidebarPanel('sidebar-main-view'); }
+        function openSidebar() { /* ... same ... */ sidebar.classList.add('open'); sidebarToggleBtn.querySelector('i').classList.replace('fa-bars', 'fa-times'); showSidebarPanel('sidebar-main-view'); }
         sidebarToggleBtn.addEventListener('click', () => { sidebar.classList.contains('open') ? closeSidebar() : openSidebar(); });
-        sidebarMainView.addEventListener('click', (e) => { /* ... same category trigger logic ... */
-             const trigger = e.target.closest('.category-trigger');
-             if (trigger) showSidebarPanel(`sidebar-${trigger.dataset.viewTarget}-view`);
-         });
-        sidebar.addEventListener('click', (e) => { /* ... same back button logic ... */
-              const backButton = e.target.closest('.sidebar-back-btn');
-              if (backButton) showSidebarPanel('sidebar-main-view');
-          });
+        sidebarMainView.addEventListener('click', (e) => { /* ... same category trigger ... */ const t=e.target.closest('.category-trigger'); if(t) showSidebarPanel(`sidebar-${t.dataset.viewTarget}-view`); });
+        sidebar.addEventListener('click', (e) => { /* ... same back button ... */ const b=e.target.closest('.sidebar-back-btn'); if(b) showSidebarPanel('sidebar-main-view'); });
 
 
         // --- Tree Management (Form, Saving, Markers) ---
 
-        // Function to show form
-        function showAddForm(e) {
-            // Prevent form if the event target is interactive map elements (like markers, popups)
-            // or the sidebar toggle button, or inside the sidebar itself.
-             const target = e.originalEvent.target;
+        // Function to show form (remains the same)
+        function showAddForm(e) { /* ... same checks and logic ... */
+            const target = e.originalEvent.target;
              if (target.closest('.leaflet-marker-icon') || target.closest('.leaflet-popup') ||
                  target === sidebarToggleBtn || sidebarToggleBtn.contains(target) ||
-                 sidebar.contains(target) ) {
+                 sidebar.contains(target) || target.closest('.current-location-marker') ) { // Added check for location marker
                  return;
              }
-
-            // Close sidebar if it's open when trying to add a tree
-            if (sidebar.classList.contains('open')) {
-                closeSidebar();
-            }
-
-            // Close any currently open form first
-            if (formContainer.style.display === 'block') {
-                formContainer.style.display = 'none';
-                treeForm.reset();
-                imagePreview.classList.add('hidden');
-            }
-
-            latInput.value = e.latlng.lat;
-            lngInput.value = e.latlng.lng;
-            formContainer.style.display = 'block';
-            document.getElementById('type').focus(); // Focus first field
+            if (sidebar.classList.contains('open')) closeSidebar();
+            if (formContainer.style.display === 'block') { formContainer.style.display = 'none'; treeForm.reset(); imagePreview.classList.add('hidden'); }
+            latInput.value = e.latlng.lat; lngInput.value = e.latlng.lng;
+            formContainer.style.display = 'block'; document.getElementById('type').focus();
         }
 
-        // Map contextmenu event to show form <-- CHANGE: Event listener
+        // Map contextmenu event to show form (remains the same)
         map.on('contextmenu', showAddForm);
 
         // Cancel button click event (remains the same)
-        cancelBtn.addEventListener('click', () => {
-            formContainer.style.display = 'none';
-            treeForm.reset();
-            imagePreview.classList.add('hidden');
-        });
+        cancelBtn.addEventListener('click', () => { formContainer.style.display = 'none'; treeForm.reset(); imagePreview.classList.add('hidden'); });
 
         // Image preview functionality (remains the same)
-        imageInput.addEventListener('change', (e) => { /* ... same ... */
-             if (e.target.files.length > 0) {
-                 const file = e.target.files[0];
-                 const reader = new FileReader();
-                 reader.onload = (e) => { previewImg.src = e.target.result; imagePreview.classList.remove('hidden'); };
-                 reader.readAsDataURL(file);
-             } else { imagePreview.classList.add('hidden'); }
-        });
+        imageInput.addEventListener('change', (e) => { /* ... same ... */ if (e.target.files.length > 0) { const file = e.target.files[0]; const reader = new FileReader(); reader.onload = (e) => { previewImg.src = e.target.result; imagePreview.classList.remove('hidden'); }; reader.readAsDataURL(file); } else { imagePreview.classList.add('hidden'); } });
 
         // Form submission (remains the same logic)
-        treeForm.addEventListener('submit', (e) => { /* ... same ... */
-            e.preventDefault();
-            const lat = parseFloat(latInput.value);
-            const lng = parseFloat(lngInput.value);
-            const type = document.getElementById('type').value;
-            const species = document.getElementById('species').value;
-            const notes = document.getElementById('notes').value;
-            const imageFile = imageInput.files[0];
-            let imageDataUrl = '';
-
-            function saveTree() {
-                const tree = { id: Date.now().toString(), type, species, notes, location: { lat, lng }, imageUrl: imageDataUrl, dateAdded: new Date().toISOString(), needsAttention: false };
-                trees.push(tree);
-                saveTreesToLocalStorage();
-                addTreeMarker(tree);
-                populateSidebar();
-                formContainer.style.display = 'none';
-                treeForm.reset();
-                imagePreview.classList.add('hidden');
-                showNotification('Tree added successfully!');
-            }
-            if (imageFile) { const reader = new FileReader(); reader.onload = (e) => { imageDataUrl = e.target.result; saveTree(); }; reader.readAsDataURL(imageFile); }
-            else { saveTree(); }
-        });
+        treeForm.addEventListener('submit', (e) => { /* ... same ... */ e.preventDefault(); const lat = parseFloat(latInput.value); const lng = parseFloat(lngInput.value); const type = document.getElementById('type').value; const species = document.getElementById('species').value; const notes = document.getElementById('notes').value; const imageFile = imageInput.files[0]; let imageDataUrl = ''; function saveTree() { const tree = { id: Date.now().toString(), type, species, notes, location: { lat, lng }, imageUrl: imageDataUrl, dateAdded: new Date().toISOString(), needsAttention: false }; trees.push(tree); saveTreesToLocalStorage(); addTreeMarker(tree); populateSidebar(); formContainer.style.display = 'none'; treeForm.reset(); imagePreview.classList.add('hidden'); showNotification('Tree added successfully!'); } if (imageFile) { const reader = new FileReader(); reader.onload = (e) => { imageDataUrl = e.target.result; saveTree(); }; reader.readAsDataURL(imageFile); } else { saveTree(); } });
 
         // --- Local Storage, Marker Creation, Popups, Reminders (remain the same) ---
         function saveTreesToLocalStorage() { localStorage.setItem('leaflog_trees', JSON.stringify(trees)); }
-        function addTreeMarker(tree) { /* ... same ... */
-            const marker = L.marker([tree.location.lat, tree.location.lng]).addTo(map);
-            markers[tree.id] = marker;
-            marker.bindPopup(() => createPopupContent(tree));
-            marker.on('popupopen', () => attachReminderButtonListener(tree.id));
-        }
-        function createPopupContent(tree) { /* ... same ... */
-            const reminderButtonText = tree.needsAttention ? 'Remove Reminder' : 'Add Reminder';
-            const reminderButtonClass = tree.needsAttention ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-blue-500 hover:bg-blue-600';
-            let content = `<div class="popup-content"><h3 class="text-lg font-semibold">${tree.species}</h3><p class="text-sm text-gray-600"><strong>Type:</strong> ${tree.type}</p>`;
-            if (tree.notes) content += `<p class="text-sm mt-1"><strong>Notes:</strong> ${tree.notes}</p>`;
-            if (tree.imageUrl) content += `<img src="${tree.imageUrl}" alt="${tree.species}" class="popup-image mt-2">`;
-            content += `<button class="toggle-reminder-btn text-xs text-white px-2 py-1 rounded mt-3 ${reminderButtonClass}" data-tree-id="${tree.id}"><i class="fas ${tree.needsAttention ? 'fa-bell-slash' : 'fa-bell'} mr-1"></i>${reminderButtonText}</button></div>`;
-            return content;
-        }
-        function attachReminderButtonListener(treeId) { /* ... same ... */
-             const button = document.querySelector(`.toggle-reminder-btn[data-tree-id="${treeId}"]`);
-             if (button) { button.removeEventListener('click', handleReminderToggle); button.addEventListener('click', handleReminderToggle); }
-        }
-        function handleReminderToggle(event) { /* ... same ... */
-             const button = event.target.closest('button');
-             const treeId = button.getAttribute('data-tree-id');
-             const treeIndex = trees.findIndex(t => t.id === treeId);
-             if (treeIndex !== -1) {
-                 trees[treeIndex].needsAttention = !trees[treeIndex].needsAttention;
-                 saveTreesToLocalStorage();
-                 const marker = markers[treeId];
-                 if (marker && marker.isPopupOpen()) { marker.setPopupContent(createPopupContent(trees[treeIndex])); attachReminderButtonListener(treeId); }
-                 populateSidebar();
-                 showNotification(trees[treeIndex].needsAttention ? 'Reminder added!' : 'Reminder removed.');
-             }
-        }
+        function addTreeMarker(tree) { /* ... same ... */ const marker = L.marker([tree.location.lat, tree.location.lng]).addTo(map); markers[tree.id] = marker; marker.bindPopup(() => createPopupContent(tree)); marker.on('popupopen', () => attachReminderButtonListener(tree.id)); }
+        function createPopupContent(tree) { /* ... same ... */ const rbt = tree.needsAttention ? 'Remove Reminder' : 'Add Reminder'; const rbc = tree.needsAttention ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-blue-500 hover:bg-blue-600'; let c = `<div class="popup-content"><h3 class="text-lg font-semibold">${tree.species}</h3><p class="text-sm text-gray-600"><strong>Type:</strong> ${tree.type}</p>`; if (tree.notes) c += `<p class="text-sm mt-1"><strong>Notes:</strong> ${tree.notes}</p>`; if (tree.imageUrl) c += `<img src="${tree.imageUrl}" alt="${tree.species}" class="popup-image mt-2">`; c += `<button class="toggle-reminder-btn text-xs text-white px-2 py-1 rounded mt-3 ${rbc}" data-tree-id="${tree.id}"><i class="fas ${tree.needsAttention ? 'fa-bell-slash' : 'fa-bell'} mr-1"></i>${rbt}</button></div>`; return c; }
+        function attachReminderButtonListener(treeId) { /* ... same ... */ const b = document.querySelector(`.toggle-reminder-btn[data-tree-id="${treeId}"]`); if (b) { b.removeEventListener('click', handleReminderToggle); b.addEventListener('click', handleReminderToggle); } }
+        function handleReminderToggle(event) { /* ... same ... */ const b = event.target.closest('button'); const tId = b.getAttribute('data-tree-id'); const tIdx = trees.findIndex(t => t.id === tId); if (tIdx !== -1) { trees[tIdx].needsAttention = !trees[tIdx].needsAttention; saveTreesToLocalStorage(); const m = markers[tId]; if (m && m.isPopupOpen()) { m.setPopupContent(createPopupContent(trees[tIdx])); attachReminderButtonListener(tId); } populateSidebar(); showNotification(trees[tIdx].needsAttention ? 'Reminder added!' : 'Reminder removed.'); } }
 
-        // --- Sidebar List Population (remains the same) ---
-        function populateSidebar() { /* ... same ... */
-            spottedList.innerHTML = ''; plantedList.innerHTML = ''; remindersList.innerHTML = '';
-            let spottedCount = 0, plantedCount = 0, reminderCount = 0;
-            const sortedTrees = [...trees].sort((a, b) => a.species.localeCompare(b.species));
-
-            sortedTrees.forEach(tree => {
-                const listItemHTML = `
-                    <span class="flex-grow mr-2">
-                         <i class="fas fa-tree mr-2 text-green-600"></i>
-                         <span class="font-medium">${tree.species}</span>
-                         ${tree.notes ? `<span class="text-xs text-gray-500 block ml-5 truncate" title="${tree.notes}">(${tree.notes.substring(0, 30)}${tree.notes.length > 30 ? '...' : ''})</span>` : ''}
-                     </span>
-                    <button class="view-on-map-btn" data-tree-id="${tree.id}">
-                         <i class="fas fa-map-marker-alt mr-1"></i>View
-                    </button>`;
-
-                 const viewButtonAction = () => {
-                     const treeId = tree.id; // Use tree.id directly from the loop scope
-                     const targetTree = trees.find(t => t.id === treeId);
-                     if(targetTree) {
-                         closeSidebar();
-                         map.setView(targetTree.location, 17, { animate: true });
-                         setTimeout(() => { if (markers[targetTree.id]) markers[targetTree.id].openPopup(); }, 300);
-                     }
-                 };
-
-                if (tree.type === 'Spotted') {
-                    const listItem = document.createElement('li');
-                    listItem.innerHTML = listItemHTML;
-                    listItem.querySelector('.view-on-map-btn').addEventListener('click', viewButtonAction);
-                    spottedList.appendChild(listItem);
-                    spottedCount++;
-                } else if (tree.type === 'Planted') {
-                     const listItem = document.createElement('li');
-                    listItem.innerHTML = listItemHTML;
-                    listItem.querySelector('.view-on-map-btn').addEventListener('click', viewButtonAction);
-                    plantedList.appendChild(listItem);
-                    plantedCount++;
-                }
-
-                if (tree.needsAttention) {
-                     const reminderItem = document.createElement('li');
-                     reminderItem.innerHTML = `
-                         <span class="flex-grow mr-2">
-                             <i class="fas fa-bell mr-2 text-orange-500"></i>
-                             <span class="font-medium">${tree.species}</span> <span class="text-xs text-gray-500">(${tree.type})</span>
-                         </span>
-                         <button class="view-on-map-btn" data-tree-id="${tree.id}">
-                             <i class="fas fa-map-marker-alt mr-1"></i>View
-                         </button>
-                     `;
-                     reminderItem.querySelector('.view-on-map-btn').addEventListener('click', viewButtonAction);
-                    remindersList.appendChild(reminderItem);
-                    reminderCount++;
-                }
-            });
-            spottedCountBadge.textContent = spottedCount; plantedCountBadge.textContent = plantedCount;
-            if (spottedCount === 0) spottedList.innerHTML = '<li class="text-gray-500 italic p-2">No spotted trees yet.</li>';
-            if (plantedCount === 0) plantedList.innerHTML = '<li class="text-gray-500 italic p-2">No planted trees yet.</li>';
-            if (reminderCount === 0) remindersList.innerHTML = '<li class="text-gray-500 italic p-2">No reminders set.</li>';
-        }
+        // --- Sidebar List Population (remain the same) ---
+        function populateSidebar() { /* ... same ... */ spottedList.innerHTML=''; plantedList.innerHTML=''; remindersList.innerHTML=''; let sc=0, pc=0, rc=0; const sorted = [...trees].sort((a,b)=>a.species.localeCompare(b.species)); sorted.forEach(tree => { const itemHTML = `<span class="flex-grow mr-2"><i class="fas fa-tree mr-2 text-green-600"></i><span class="font-medium">${tree.species}</span>${tree.notes ? `<span class="text-xs text-gray-500 block ml-5 truncate" title="${tree.notes}">(${tree.notes.substring(0,30)}${tree.notes.length > 30 ? '...':''})</span>`:''}</span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`; const action = ()=>{ const t=trees.find(i=>i.id===tree.id); if(t){ closeSidebar(); map.setView(t.location,17,{animate:true}); setTimeout(()=>{if(markers[t.id]) markers[t.id].openPopup();}, 300); }}; if(tree.type==='Spotted'){const li=document.createElement('li');li.innerHTML=itemHTML;li.querySelector('.view-on-map-btn').addEventListener('click',action);spottedList.appendChild(li);sc++;} else if(tree.type==='Planted'){const li=document.createElement('li');li.innerHTML=itemHTML;li.querySelector('.view-on-map-btn').addEventListener('click',action);plantedList.appendChild(li);pc++;} if(tree.needsAttention){const ri=document.createElement('li');ri.innerHTML=`<span class="flex-grow mr-2"><i class="fas fa-bell mr-2 text-orange-500"></i><span class="font-medium">${tree.species}</span> <span class="text-xs text-gray-500">(${tree.type})</span></span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`;ri.querySelector('.view-on-map-btn').addEventListener('click',action);remindersList.appendChild(ri);rc++;}}); spottedCountBadge.textContent=sc; plantedCountBadge.textContent=pc; if(sc===0) spottedList.innerHTML='<li class="text-gray-500 italic p-2">No spotted trees yet.</li>'; if(pc===0) plantedList.innerHTML='<li class="text-gray-500 italic p-2">No planted trees yet.</li>'; if(rc===0) remindersList.innerHTML='<li class="text-gray-500 italic p-2">No reminders set.</li>'; }
 
         // --- Notification (remains the same) ---
-        function showNotification(message) { /* ... same ... */
-            document.getElementById('notification-text').textContent = message;
-            notification.classList.remove('translate-x-full'); notification.classList.add('translate-x-0');
-            setTimeout(() => { notification.classList.remove('translate-x-0'); notification.classList.add('translate-x-full'); }, 3000);
-        }
+        function showNotification(message) { /* ... same ... */ document.getElementById('notification-text').textContent=message; notification.classList.remove('translate-x-full'); notification.classList.add('translate-x-0'); setTimeout(()=>{notification.classList.remove('translate-x-0'); notification.classList.add('translate-x-full');},3000); }
 
-        // --- Initialization (remains the same) ---
+        // --- Initialization ---
         function loadExistingTrees() {
             trees.forEach(tree => { if (tree.needsAttention === undefined) tree.needsAttention = false; addTreeMarker(tree); });
             populateSidebar();
@@ -416,7 +282,9 @@
         }
 
         // Initialize the app
-        loadExistingTrees();
+        loadExistingTrees(); // Load saved trees first
+
+        // Geolocation check runs after initial setup
 
     </script>
 </body>
