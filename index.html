@@ -147,8 +147,8 @@
         #add-fab-container.expanded #add-tree-fab i { transform: rotate(45deg); }
 
         /* Sub FABs (Spotted/Planted) */
-        .sub-fab { width: 45px; height: 45px; font-size: 0.8em; font-weight: 600; position: absolute; bottom: 5px; right: 5px; z-index: 1000; opacity: 0; transform: scale(0.5) translateY(10px); transition: opacity 0.2s ease-out, transform 0.2s ease-out; cursor: pointer; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2px; text-align: center; line-height: 1.1; border-radius: 50%; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
-        .sub-fab i { font-size: 16px; margin-bottom: 1px; }
+        .sub-fab { width: 45px; height: 45px; font-size: 0.8em; font-weight: 600; position: absolute; bottom: 5px; right: 5px; z-index: 1000; opacity: 0; transform: scale(0.5) translateY(10px); transition: opacity 0.2s ease-out, transform 0.2s ease-out; cursor: grab; /* Change cursor */ pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2px; text-align: center; line-height: 1.1; border-radius: 50%; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+        .sub-fab:active { cursor: grabbing; } /* Change cursor while dragging */
         #add-fab-container.expanded .sub-fab { position: relative; bottom: auto; right: auto; opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
         #sub-fab-spotted { background-color: #fbbf24; color: #422006; }
         #sub-fab-planted { background-color: #3b82f6; color: white; }
@@ -157,7 +157,7 @@
         #sub-fab-planted:hover { background-color: #3b82f6; }
 
         /* Drag Simulation Styles */
-        #drag-clone { position: fixed; z-index: 1010; pointer-events: none; opacity: 0.75; width: 45px; height: 45px; font-size: 0.8em; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2px; text-align: center; line-height: 1.1; border-radius: 50%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+        #drag-clone { position: fixed; z-index: 1010; pointer-events: none; opacity: 0.75; width: 45px; height: 45px; font-size: 0.8em; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2px; text-align: center; line-height: 1.1; border-radius: 50%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); cursor: grabbing; } /* Ensure clone has grabbing cursor */
         body.dragging-active { cursor: grabbing !important; user-select: none; }
         #map.drag-over { outline: 2px dashed #16a34a; outline-offset: -2px; }
 
@@ -428,6 +428,7 @@
             let markers = {};
             let currentSidebarView = 'sidebar-main-view'; // Track sidebar view
             let isDragging = false; let dragClone = null; let dragTreeType = null; let startX, startY, offsetX, offsetY;
+            let hasDragged = false; // Flag to check if actual dragging occurred
 
             // --- Function Definitions ---
 
@@ -505,10 +506,107 @@
             function showNotification(message) { document.getElementById('notification-text').textContent=message; notification.classList.remove('translate-x-full'); notification.classList.add('translate-x-0'); setTimeout(()=>{notification.classList.remove('translate-x-0'); notification.classList.add('translate-x-full');},3000); }
             // Load existing data
             function loadExistingTrees() { trees.forEach(tree => { if (tree.needsAttention === undefined) tree.needsAttention = false; addTreeMarker(tree); }); }
+
             // Drag Simulation Functions
-            function startDrag(e) { if (e.type === 'touchstart') e.preventDefault(); const fab = e.currentTarget; dragTreeType = fab.dataset.treeType; isDragging = true; const touch = e.type === 'touchstart' ? e.touches[0] : e; startX = touch.clientX; startY = touch.clientY; const rect = fab.getBoundingClientRect(); offsetX = startX - rect.left; offsetY = startY - rect.top; dragClone = fab.cloneNode(true); dragClone.id = 'drag-clone'; dragClone.style.left = `${startX - offsetX}px`; dragClone.style.top = `${startY - offsetY}px`; dragClone.style.backgroundColor = window.getComputedStyle(fab).backgroundColor; dragClone.style.color = window.getComputedStyle(fab).color; document.body.appendChild(dragClone); document.body.classList.add('dragging-active'); if (addFabContainer.classList.contains('expanded')) { addFabContainer.classList.remove('expanded'); } map.dragging.disable(); if (map.doubleClickZoom) map.doubleClickZoom.disable(); }
-            function dragMove(e) { if (!isDragging || !dragClone) return; if (e.type === 'touchmove') e.preventDefault(); const touch = e.type === 'touchmove' ? e.touches[0] : e; const currentX = touch.clientX; const currentY = touch.clientY; dragClone.style.left = `${currentX - offsetX}px`; dragClone.style.top = `${currentY - offsetY}px`; const elementUnderPointer = document.elementFromPoint(currentX, currentY); mapContainer.classList.toggle('drag-over', mapContainer.contains(elementUnderPointer)); }
-            function endDrag(e) { if (!isDragging) return; map.dragging.enable(); if (map.doubleClickZoom) map.doubleClickZoom.enable(); if (dragClone) { dragClone.remove(); dragClone = null; } document.body.classList.remove('dragging-active'); mapContainer.classList.remove('drag-over'); const touch = e.type === 'touchend' ? e.changedTouches[0] : e; const finalX = touch.clientX; const finalY = touch.clientY; const elementUnderPointer = document.elementFromPoint(finalX, finalY); if (mapContainer.contains(elementUnderPointer)) { const point = map.containerPointToLayerPoint([finalX, finalY]); const latLng = map.layerPointToLatLng(point); console.log("Drop Coords (Simulated):", latLng); if (latLng && dragTreeType) { openAddForm(latLng.lat, latLng.lng, dragTreeType); } else { console.warn("Could not get LatLng or tree type on drop."); } } else { console.log("Dropped outside map area."); } isDragging = false; dragTreeType = null; startX = null; startY = null; offsetX = null; offsetY = null; }
+            function startDrag(e) {
+                if (e.type === 'touchstart') e.preventDefault();
+                const fab = e.currentTarget;
+                dragTreeType = fab.dataset.treeType;
+                isDragging = true;
+                hasDragged = false; // Reset the flag here
+                const touch = e.type === 'touchstart' ? e.touches[0] : e;
+                startX = touch.clientX;
+                startY = touch.clientY;
+                const rect = fab.getBoundingClientRect();
+                offsetX = startX - rect.left;
+                offsetY = startY - rect.top;
+                dragClone = fab.cloneNode(true);
+                dragClone.id = 'drag-clone';
+                dragClone.style.left = `${startX - offsetX}px`;
+                dragClone.style.top = `${startY - offsetY}px`;
+                dragClone.style.backgroundColor = window.getComputedStyle(fab).backgroundColor;
+                dragClone.style.color = window.getComputedStyle(fab).color;
+                document.body.appendChild(dragClone);
+                document.body.classList.add('dragging-active');
+                // REMOVED: Container collapse is handled in endDrag on success
+                map.dragging.disable();
+                if (map.doubleClickZoom) map.doubleClickZoom.disable();
+            }
+
+            function dragMove(e) {
+                if (!isDragging || !dragClone) return;
+                if (e.type === 'touchmove') e.preventDefault();
+                const touch = e.type === 'touchmove' ? e.touches[0] : e;
+                const currentX = touch.clientX;
+                const currentY = touch.clientY;
+
+                // Check if movement threshold is exceeded
+                const deltaX = currentX - startX;
+                const deltaY = currentY - startY;
+                if (!hasDragged && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
+                    hasDragged = true; // Set the flag if moved enough
+                }
+
+                dragClone.style.left = `${currentX - offsetX}px`;
+                dragClone.style.top = `${currentY - offsetY}px`;
+
+                const elementUnderPointer = document.elementFromPoint(currentX, currentY);
+                mapContainer.classList.toggle('drag-over', mapContainer.contains(elementUnderPointer));
+            }
+
+            function endDrag(e) {
+                if (!isDragging) return; // Exit if not dragging
+
+                map.dragging.enable();
+                if (map.doubleClickZoom) map.doubleClickZoom.enable();
+                if (dragClone) {
+                    dragClone.remove();
+                    dragClone = null;
+                }
+                document.body.classList.remove('dragging-active');
+                mapContainer.classList.remove('drag-over');
+
+                const touch = e.type === 'touchend' ? e.changedTouches[0] : e;
+                const finalX = touch.clientX;
+                const finalY = touch.clientY;
+                const elementUnderPointer = document.elementFromPoint(finalX, finalY);
+
+                let addedTree = false; // Flag to track success
+
+                // Check hasDragged flag here
+                if (mapContainer.contains(elementUnderPointer) && hasDragged) {
+                    const point = map.containerPointToLayerPoint([finalX, finalY]);
+                    const latLng = map.layerPointToLatLng(point);
+                    console.log("Drop Coords (Dragged):", latLng);
+                    if (latLng && dragTreeType) {
+                        openAddForm(latLng.lat, latLng.lng, dragTreeType);
+                        addedTree = true; // Set flag on success
+                    } else {
+                        console.warn("Could not get LatLng or tree type on drop.");
+                    }
+                } else if (hasDragged) {
+                    console.log("Dragged but dropped outside map area.");
+                    // Keep FABs expanded
+                } else {
+                    console.log("Click detected, no drag action.");
+                    // Keep FABs expanded
+                }
+
+                // Collapse FABs only if a tree add was initiated
+                if (addedTree) { // Check the flag
+                    addFabContainer.classList.remove('expanded');
+                }
+
+                // Reset drag state regardless of outcome
+                isDragging = false;
+                dragTreeType = null;
+                hasDragged = false;
+                startX = null;
+                startY = null;
+                offsetX = null;
+                offsetY = null;
+            }
+
 
             // --- Event Listeners & Initialization Function ---
             function initializeApp() {
@@ -611,7 +709,7 @@
                                  marker.setPopupContent(createPopupContent(treeToUpdate));
                                  // If the popup was open, re-attach listeners after content update
                                  if (marker.isPopupOpen()) {
-                                    marker.getPopup().on('add', () => attachPopupListeners(treeId));
+                                    // Re-binding popup content implicitly handles listener re-attachment via the 'popupopen' event
                                  }
                              }
                              populateSidebarMenu();
