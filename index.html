@@ -56,8 +56,11 @@
         .bottom-sheet-content { padding: 15px; overflow-y: auto; flex-grow: 1; }
         .bottom-sheet-view { display: none; } .bottom-sheet-view.visible { display: block; }
         .bottom-sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eee; }
-        .bottom-sheet-header h3 { font-size: 1.2rem; font-weight: 600; color: #333; margin: 0; }
-        .bottom-sheet-back-btn, .bottom-sheet-close-btn { background: none; border: none; font-size: 1.3rem; color: #6b7280; cursor: pointer; padding: 5px; }
+        .bottom-sheet-header h3 { font-size: 1.2rem; font-weight: 600; color: #333; margin: 0; flex-grow: 1; text-align: center; } /* Centered title */
+         .bottom-sheet-header span { min-width: 30px; } /* Spacer for centering */
+        .bottom-sheet-back-btn, .bottom-sheet-close-btn { background: none; border: none; font-size: 1.3rem; color: #6b7280; cursor: pointer; padding: 5px; min-width: 30px; text-align: right; }
+        .bottom-sheet-back-btn { text-align: left;} /* Align back left */
+
         .main-menu-button { display: flex; justify-content: space-between; align-items: center; padding: 12px 8px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px; cursor: pointer; background-color: white; transition: background-color 0.2s; }
         .main-menu-button:hover { background-color: #f9fafb; }
         .main-menu-button h4 { font-weight: 500; margin: 0; color: #374151; }
@@ -69,7 +72,7 @@
         .list-item .view-on-map-btn:hover { text-decoration: underline; }
         #add-form-view { padding-top: 0; } #add-form-view form { margin-top: 0; }
         .popup-image { max-width: 100%; max-height: 150px; object-fit: cover; border-radius: 4px; margin-top: 8px; }
-        .leaflet-popup-content { min-width: 220px; }
+        .leaflet-popup-content { min-width: 220px; padding-bottom: 8px !important; } /* Ensure padding */
         .current-location-marker { background-color: rgba(51, 133, 255, 0.4); border: 2px solid #3385ff; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
 
         /* Print Styles */
@@ -81,6 +84,10 @@
     <header class="bg-green-700 text-white p-3 shadow-md header no-print">
         <div class="container mx-auto flex justify-between items-center">
             <h1 class="text-lg font-bold"><i class="fas fa-leaf mr-1"></i>LeafLog</h1>
+            <!-- Header Menu Button -->
+            <button id="header-menu-btn" class="text-white p-2 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-white" aria-label="Open menu">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
         </div>
     </header>
 
@@ -156,14 +163,15 @@
                   </div>
                   <ul id="reminders-list" class="list-item-container"></ul>
             </div>
-            <!-- Add Form View -->
+            <!-- Add/Edit Form View -->
             <div id="add-form-view" class="bottom-sheet-view">
                  <div class="bottom-sheet-header">
                    <span></span> <!-- Spacer -->
-                   <h3>Add New Tree</h3>
-                   <button class="bottom-sheet-close-btn" aria-label="Cancel add tree"><i class="fas fa-times"></i></button>
+                   <h3><!-- Title set by JS --></h3>
+                   <button class="bottom-sheet-close-btn" aria-label="Cancel add/edit tree"><i class="fas fa-times"></i></button>
                  </div>
                  <form id="tree-form" class="space-y-4">
+                    <input type="hidden" id="edit-tree-id" name="editTreeId"> <!-- Hidden input for edit mode -->
                     <input type="hidden" id="lat" name="lat">
                     <input type="hidden" id="lng" name="lng">
                     <div>
@@ -210,47 +218,11 @@
 
             // --- Map Initialization & Geolocation ---
             const defaultCoords = [42.501511, 27.466138];
-            const map = L.map('map', { zoomControl: false }).setView(defaultCoords, 13); // Start at default
+            const map = L.map('map', { zoomControl: false }).setView(defaultCoords, 13);
             L.control.zoom({ position: 'bottomright' }).addTo(map);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM', maxZoom: 19 }).addTo(map);
-
-            let currentLocationMarker = null;
-            let lastKnownLocation = null;
-            // let centeredOnLocation = false; // No longer needed
-
-            if (navigator.geolocation) {
-                 navigator.geolocation.watchPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        lastKnownLocation = [lat, lng];
-
-                        // Update or create the marker - REMOVED .bindPopup()
-                        if (!currentLocationMarker) {
-                            currentLocationMarker = L.circleMarker(lastKnownLocation, { radius: 8, className: 'current-location-marker' })
-                                .addTo(map); // <<< No .bindPopup() here
-                            console.log("Current location marker created.");
-                        } else {
-                            currentLocationMarker.setLatLng(lastKnownLocation);
-                        }
-                        // Auto-centering removed
-                    },
-                    (err) => {
-                        console.error("Geo Err: ", err.message);
-                        if (currentLocationMarker) {
-                            map.removeLayer(currentLocationMarker);
-                            currentLocationMarker = null;
-                            console.log("Current location marker removed due to error.");
-                        }
-                        lastKnownLocation = null; // Clear location on error
-                        showNotification(`Location error: ${err.message}`); // Inform user
-                    },
-                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                 );
-            } else {
-                console.log("Geo not supported.");
-            }
-
+            let currentLocationMarker = null; let lastKnownLocation = null;
+            if (navigator.geolocation) { navigator.geolocation.watchPosition( (pos) => { const lat=pos.coords.latitude, lng=pos.coords.longitude; lastKnownLocation=[lat,lng]; if(!currentLocationMarker){ currentLocationMarker=L.circleMarker(lastKnownLocation, {radius:8, className:'current-location-marker'}).addTo(map); } else { currentLocationMarker.setLatLng(lastKnownLocation); } }, (err) => { console.error("Geo Err: ", err.message); if(currentLocationMarker){map.removeLayer(currentLocationMarker); currentLocationMarker=null;} lastKnownLocation=null; showNotification(`Location error: ${err.message}`); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } ); } else { console.log("Geo not supported."); }
 
             // --- DOM References ---
             const bottomSheet = document.getElementById('bottom-sheet');
@@ -263,14 +235,19 @@
             const addTreeFab = document.getElementById('add-tree-fab');
             const subFabs = addFabContainer.querySelectorAll('.sub-fab');
             const mapContainer = document.getElementById('map');
+            const headerMenuBtn = document.getElementById('header-menu-btn'); // Added
             const treeForm = document.getElementById('tree-form');
             const latInput = document.getElementById('lat');
             const lngInput = document.getElementById('lng');
             const typeSelect = document.getElementById('type');
+            const speciesInput = document.getElementById('species');
+            const notesInput = document.getElementById('notes');
             const imageInput = document.getElementById('image');
             const imagePreview = document.getElementById('image-preview');
             const previewImg = document.getElementById('preview-img');
             const cancelFormBtn = document.getElementById('cancel-form-btn');
+            const editTreeIdInput = document.getElementById('edit-tree-id'); // Added
+            const addFormTitle = document.querySelector('#add-form-view h3'); // Added
             const spottedList = document.getElementById('spotted-list');
             const plantedList = document.getElementById('planted-list');
             const remindersList = document.getElementById('reminders-list');
@@ -284,24 +261,93 @@
             let markers = {};
             let currentBottomSheetView = 'main-menu-view';
             let currentBottomSheetState = 'state-handle';
-            let isDragging = false;
-            let dragClone = null;
-            let dragTreeType = null;
-            let startX, startY, offsetX, offsetY;
+            let isDragging = false; let dragClone = null; let dragTreeType = null; let startX, startY, offsetX, offsetY;
 
             // --- Function Definitions ---
 
             // Bottom Sheet Management
             function setBottomSheetState(newState, viewId = null) { bottomSheet.classList.remove('state-handle', 'state-form', 'state-list-partial', 'state-list-full', 'active'); if (newState === 'closed'){ currentBottomSheetState = 'closed'; } else { bottomSheet.classList.add('active', newState); currentBottomSheetState = newState; if (viewId) showBottomSheetView(viewId); } }
             function showBottomSheetView(viewId) { allSheetViews.forEach(v => v.classList.toggle('visible', v.id === viewId)); currentBottomSheetView = viewId; bottomSheet.querySelector('.bottom-sheet-content').scrollTop = 0; }
+
             // Form Handling
-            function openAddForm(lat, lng, treeType) { console.log(`Opening form for ${treeType} at ${lat}, ${lng}`); latInput.value = lat; lngInput.value = lng; typeSelect.value = treeType; document.getElementById('species').value = ''; document.getElementById('notes').value = ''; imageInput.value = null; imagePreview.classList.add('hidden'); setBottomSheetState('state-form', 'add-form-view'); document.getElementById('species').focus(); }
+            function openAddForm(lat, lng, treeType) {
+                console.log(`Opening ADD form for ${treeType} at ${lat}, ${lng}`);
+                editTreeIdInput.value = ''; // Ensure edit ID is cleared
+                addFormTitle.textContent = 'Add New Tree';
+                latInput.value = lat; lngInput.value = lng; typeSelect.value = treeType;
+                speciesInput.value = ''; notesInput.value = ''; imageInput.value = null;
+                imagePreview.classList.add('hidden');
+                setBottomSheetState('state-form', 'add-form-view');
+                speciesInput.focus();
+            }
+            function openEditForm(treeId) {
+                const tree = trees.find(t => t.id === treeId);
+                if (!tree) { console.error("Tree not found for editing:", treeId); return; }
+                console.log(`Opening EDIT form for tree ID: ${treeId}`);
+                map.closePopup(); // Close popup first
+                editTreeIdInput.value = treeId;
+                addFormTitle.textContent = 'Edit Tree';
+                latInput.value = tree.location.lat; lngInput.value = tree.location.lng; typeSelect.value = tree.type;
+                speciesInput.value = tree.species; notesInput.value = tree.notes || ''; imageInput.value = null;
+                if (tree.imageUrl) { previewImg.src = tree.imageUrl; imagePreview.classList.remove('hidden'); }
+                else { imagePreview.classList.add('hidden'); }
+                setBottomSheetState('state-form', 'add-form-view');
+                speciesInput.focus();
+            }
+
             // Local Storage & Marker Management
             function saveTreesToLocalStorage() { localStorage.setItem('leaflog_trees', JSON.stringify(trees)); }
-            function addTreeMarker(tree) { const marker = L.marker([tree.location.lat, tree.location.lng]).addTo(map); markers[tree.id] = marker; marker.bindPopup(() => createPopupContent(tree)); marker.on('popupopen', () => attachReminderButtonListener(tree.id)); }
-            function createPopupContent(tree) { const rbt=tree.needsAttention?'Remove Reminder':'Add Reminder'; const rbc=tree.needsAttention?'bg-yellow-500 hover:bg-yellow-600':'bg-blue-500 hover:bg-blue-600'; let c=`<div class="popup-content"><h3 class="text-lg font-semibold">${tree.species}</h3><p class="text-sm text-gray-600"><strong>Type:</strong> ${tree.type}</p>`; if(tree.notes)c+=`<p class="text-sm mt-1"><strong>Notes:</strong> ${tree.notes}</p>`; if(tree.imageUrl)c+=`<img src="${tree.imageUrl}" alt="${tree.species}" class="popup-image mt-2">`; c+=`<button class="toggle-reminder-btn text-xs text-white px-2 py-1 rounded mt-3 ${rbc}" data-tree-id="${tree.id}"><i class="fas ${tree.needsAttention?'fa-bell-slash':'fa-bell'} mr-1"></i>${rbt}</button></div>`; return c; }
-            function attachReminderButtonListener(treeId) { const b=document.querySelector(`.toggle-reminder-btn[data-tree-id="${treeId}"]`); if(b){b.removeEventListener('click',handleReminderToggle); b.addEventListener('click',handleReminderToggle);} }
-            function handleReminderToggle(event) { const b=event.target.closest('button'); const tId=b.getAttribute('data-tree-id'); const tIdx=trees.findIndex(t=>t.id===tId); if(tIdx!==-1){trees[tIdx].needsAttention=!trees[tIdx].needsAttention; saveTreesToLocalStorage(); const m=markers[tId]; if(m&&m.isPopupOpen()){m.setPopupContent(createPopupContent(trees[tIdx])); attachReminderButtonListener(tId);} populateLists(); showNotification(trees[tIdx].needsAttention?'Reminder added!':'Reminder removed.');} }
+            function addTreeMarker(tree) {
+                const marker = L.marker([tree.location.lat, tree.location.lng]).addTo(map);
+                markers[tree.id] = marker;
+                // Use a named function for attaching listeners AFTER popup is created
+                marker.on('popupopen', () => attachPopupListeners(tree.id));
+                // Set content using a function to allow dynamic updates
+                marker.bindPopup(() => createPopupContent(tree));
+            }
+            function createPopupContent(tree) {
+                const reminderButtonText = tree.needsAttention ? 'Remove Reminder' : 'Add Reminder';
+                const reminderButtonClass = tree.needsAttention ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-blue-500 hover:bg-blue-600';
+                let c = `<div class="popup-content"><h3 class="text-lg font-semibold">${tree.species}</h3><p class="text-sm text-gray-600"><strong>Type:</strong> ${tree.type}</p>`;
+                if (tree.notes) c += `<p class="text-sm mt-1"><strong>Notes:</strong> ${tree.notes}</p>`;
+                if (tree.imageUrl) c += `<img src="${tree.imageUrl}" alt="${tree.species}" class="popup-image mt-2">`;
+                c += `<button class="toggle-reminder-btn text-xs text-white px-2 py-1 rounded mt-3 ${reminderButtonClass}" data-tree-id="${tree.id}"><i class="fas ${tree.needsAttention ? 'fa-bell-slash' : 'fa-bell'} mr-1"></i>${reminderButtonText}</button>`;
+                c += `<div class="mt-3 pt-2 border-t border-gray-200 flex justify-end space-x-2"><button class="popup-edit-btn text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded" data-tree-id="${tree.id}" aria-label="Edit tree"><i class="fas fa-edit mr-1"></i>Edit</button><button class="popup-delete-btn text-xs text-red-600 hover:text-red-800 px-2 py-1 rounded" data-tree-id="${tree.id}" aria-label="Delete tree"><i class="fas fa-trash-alt mr-1"></i>Delete</button></div>`;
+                c += `</div>`;
+                return c;
+            }
+            function attachPopupListeners(treeId) {
+                 const popupNode = document.querySelector(`.leaflet-popup-content`); // Find current popup content
+                 if (!popupNode) { console.error("Cannot find popup content node to attach listeners."); return; }
+
+                 // Reminder Button
+                 const reminderBtn = popupNode.querySelector(`.toggle-reminder-btn[data-tree-id="${treeId}"]`);
+                 if (reminderBtn) {
+                     reminderBtn.replaceWith(reminderBtn.cloneNode(true)); // Clone to remove old listeners
+                     popupNode.querySelector(`.toggle-reminder-btn[data-tree-id="${treeId}"]`)
+                         .addEventListener('click', handleReminderToggle);
+                 } else { console.warn("Reminder button not found in popup"); }
+
+                 // Edit Button
+                 const editBtn = popupNode.querySelector(`.popup-edit-btn[data-tree-id="${treeId}"]`);
+                 if (editBtn) {
+                     editBtn.replaceWith(editBtn.cloneNode(true));
+                     popupNode.querySelector(`.popup-edit-btn[data-tree-id="${treeId}"]`)
+                         .addEventListener('click', handleEditTree);
+                 } else { console.warn("Edit button not found in popup"); }
+
+                 // Delete Button
+                 const deleteBtn = popupNode.querySelector(`.popup-delete-btn[data-tree-id="${treeId}"]`);
+                 if (deleteBtn) {
+                     deleteBtn.replaceWith(deleteBtn.cloneNode(true));
+                     popupNode.querySelector(`.popup-delete-btn[data-tree-id="${treeId}"]`)
+                         .addEventListener('click', handleDeleteTree);
+                 } else { console.warn("Delete button not found in popup"); }
+            }
+            function handleReminderToggle(event) { const b=event.target.closest('button'); const tId=b.getAttribute('data-tree-id'); const tIdx=trees.findIndex(t=>t.id===tId); if(tIdx!==-1){trees[tIdx].needsAttention=!trees[tIdx].needsAttention; saveTreesToLocalStorage(); const m=markers[tId]; if(m&&m.isPopupOpen()){m.setPopupContent(createPopupContent(trees[tIdx])); attachPopupListeners(tId); /* Re-attach after update */} populateLists(); showNotification(trees[tIdx].needsAttention?'Reminder added!':'Reminder removed.');} }
+            function handleEditTree(event) { const button = event.target.closest('button'); const treeId = button.dataset.treeId; openEditForm(treeId); }
+            function handleDeleteTree(event) { const button = event.target.closest('button'); const treeId = button.dataset.treeId; const treeIndex = trees.findIndex(t => t.id === treeId); if (treeIndex === -1) { console.error("Tree to delete not found:", treeId); return; } const treeSpecies = trees[treeIndex].species; if (!window.confirm(`Are you sure you want to delete the ${treeSpecies} tree? This cannot be undone.`)) { return; } console.log("Deleting tree:", treeId); map.closePopup(); const marker = markers[treeId]; if (marker) { map.removeLayer(marker); delete markers[treeId]; console.log("Marker removed"); } else { console.warn("Marker not found for deletion:", treeId); } trees.splice(treeIndex, 1); console.log("Tree removed from array"); try { saveTreesToLocalStorage(); console.log("LocalStorage updated"); } catch (error) { console.error("LocalStorage Error on delete:", error); showNotification("Error saving deletion."); } populateLists(); console.log("Lists updated"); showNotification(`"${treeSpecies}" tree deleted.`); }
+
             // List Population (with Null Checks)
             function populateLists() {
                 if (!spottedList || !plantedList || !remindersList || !spottedCountBadge || !plantedCountBadge || !reminderCountBadge) { console.error("One or more list/badge elements not found at the start of populateLists. Aborting."); return; }
@@ -328,21 +374,24 @@
                 populateLists();
                 setBottomSheetState('state-handle', 'main-menu-view');
 
+                // Header Menu Button Listener
+                headerMenuBtn.addEventListener('click', () => {
+                    showNotification("Menu button clicked! (TBD)");
+                     if (currentBottomSheetState === 'closed' || currentBottomSheetState === 'state-handle') {
+                        setBottomSheetState('state-list-partial', 'main-menu-view');
+                     } else {
+                        setBottomSheetState('state-handle', 'main-menu-view');
+                     }
+                });
+
                 // Bottom Sheet Listeners
                 bottomSheet.querySelector('.bottom-sheet-handle').addEventListener('click', () => { if (currentBottomSheetState === 'state-handle') { setBottomSheetState(currentBottomSheetView === 'main-menu-view' ? 'state-list-partial' : 'state-list-full', currentBottomSheetView); } else if (currentBottomSheetState === 'state-list-partial') { setBottomSheetState('state-list-full', currentBottomSheetView); } else { setBottomSheetState('state-handle', 'main-menu-view'); } });
                 mainMenuButtons.forEach(b => b.addEventListener('click', () => setBottomSheetState('state-list-full', b.dataset.viewTarget)));
                 backButtons.forEach(b => b.addEventListener('click', () => setBottomSheetState('state-list-partial', 'main-menu-view')));
-                closeButtons.forEach(b => b.addEventListener('click', () => setBottomSheetState('closed')));
+                closeButtons.forEach(b => b.addEventListener('click', () => { setBottomSheetState('closed'); editTreeIdInput.value = ''; })); // Clear edit state
 
                 // FAB Listeners
-                locateFab.addEventListener('click', () => {
-                    if (lastKnownLocation) {
-                        map.setView(lastKnownLocation, 16, { animate: true });
-                        // Popup removed for current location marker
-                    } else {
-                        showNotification("Your location is not available yet.");
-                    }
-                });
+                locateFab.addEventListener('click', () => { if (lastKnownLocation) { map.setView(lastKnownLocation, 16, { animate: true }); } else { showNotification("Your location is not available yet."); } });
                 addTreeFab.addEventListener('click', (e) => { e.stopPropagation(); addFabContainer.classList.toggle('expanded'); if (addFabContainer.classList.contains('expanded')) { setBottomSheetState('closed'); } });
                 document.addEventListener('click', (e) => { if (!addFabContainer.contains(e.target) && addFabContainer.classList.contains('expanded')) { addFabContainer.classList.remove('expanded'); } });
 
@@ -354,66 +403,50 @@
                 document.addEventListener('touchend', endDrag);
 
                 // Form Listeners
-                cancelFormBtn.addEventListener('click', () => { setBottomSheetState('closed'); treeForm.reset(); imagePreview.classList.add('hidden'); });
+                cancelFormBtn.addEventListener('click', () => { setBottomSheetState('closed'); treeForm.reset(); imagePreview.classList.add('hidden'); editTreeIdInput.value = ''; }); // Clear edit state
                 treeForm.addEventListener('submit', (e) => {
                     console.log("Form submit event triggered.");
                     e.preventDefault();
-                    console.log("Default prevented.");
+                    const editingTreeId = editTreeIdInput.value;
+                    const lat = parseFloat(latInput.value); const lng = parseFloat(lngInput.value); const type = typeSelect.value; const species = speciesInput.value; const notes = notesInput.value; const imageFile = imageInput.files[0]; let imageDataUrl = '';
+                    console.log(`Submitting: Mode=${editingTreeId ? 'Edit' : 'Add'}, ID=${editingTreeId || 'N/A'}, Type=${type}, Species=${species}, Lat=${lat}, Lng=${lng}, Notes=${notes}, ImageFile=${imageFile ? imageFile.name : 'None'}`);
+                    if (!type || !species || isNaN(lat) || isNaN(lng)) { console.error("Validation failed"); showNotification("Error: Please fill required fields."); return; }
 
-                    const lat = parseFloat(latInput.value);
-                    const lng = parseFloat(lngInput.value);
-                    const type = typeSelect.value;
-                    const species = document.getElementById('species').value;
-                    const notes = document.getElementById('notes').value;
-                    const imageFile = imageInput.files[0];
-                    let imageDataUrl = '';
+                    const processImageAndSave = (saveCallback) => {
+                         if(imageFile){
+                             console.log("Processing new image...");
+                             const reader = new FileReader();
+                             reader.onload = (e) => { console.log("FileReader onload"); imageDataUrl = e.target.result; saveCallback(); };
+                             reader.onerror = (error) => { console.error("FileReader Error:", error); showNotification("Error reading image."); };
+                             reader.readAsDataURL(imageFile);
+                         } else { console.log("No new image."); imageDataUrl = null; saveCallback(); } // Indicate no *new* image
+                    };
 
-                    console.log(`Submitting: Type=${type}, Species=${species}, Lat=${lat}, Lng=${lng}, Notes=${notes}, ImageFile=${imageFile ? imageFile.name : 'None'}`);
-
-                    if (!type || !species || isNaN(lat) || isNaN(lng)) {
-                         console.error("Form validation failed: Missing required data or invalid coordinates.");
-                         showNotification("Error: Please fill required fields.");
-                         return;
-                    }
-
-                    function saveTreeData() {
-                         console.log("Executing saveTreeData()...");
-                         const tree={id:Date.now().toString(),type,species,notes,location:{lat,lng},imageUrl:imageDataUrl,dateAdded:new Date().toISOString(),needsAttention:false};
-                         trees.push(tree);
-                         try {
-                             saveTreesToLocalStorage();
-                             console.log("Saved to localStorage.");
-                         } catch (error) {
-                             console.error("LocalStorage Error:", error);
-                             showNotification("Error saving data. Storage might be full.");
-                             return;
-                         }
-                         addTreeMarker(tree);
-                         console.log("Marker added.");
-                         populateLists();
-                         console.log("Lists populated.");
-                         setBottomSheetState('closed');
-                         treeForm.reset();imagePreview.classList.add('hidden');
-                         console.log("Form reset and sheet closed.");
-                         showNotification('Tree added successfully!');
-                    }
-
-                    if(imageFile){
-                        console.log("Image file detected, starting FileReader...");
-                        const reader=new FileReader();
-                        reader.onload=(e)=>{
-                            console.log("FileReader onload triggered.");
-                            imageDataUrl=e.target.result;
-                            saveTreeData();
-                        };
-                        reader.onerror = (error) => {
-                            console.error("FileReader Error: ", error);
-                            showNotification("Error reading image file. Try without image?");
-                        };
-                        reader.readAsDataURL(imageFile);
-                    }else{
-                        console.log("No image file, calling saveTreeData() directly.");
-                        saveTreeData();
+                    if (editingTreeId) { // --- Edit Logic ---
+                         console.log("Executing EDIT logic");
+                         const treeIndex = trees.findIndex(t => t.id === editingTreeId);
+                         if (treeIndex === -1) { console.error("Tree to edit not found"); showNotification("Error: Could not find tree to update."); return; }
+                         processImageAndSave(() => {
+                             const treeToUpdate = trees[treeIndex];
+                             treeToUpdate.species = species; treeToUpdate.notes = notes; treeToUpdate.location.lat = lat; treeToUpdate.location.lng = lng; treeToUpdate.type = type;
+                             if (imageDataUrl !== null) { treeToUpdate.imageUrl = imageDataUrl; } // Only update if new image processed
+                             console.log("Updated tree object:", treeToUpdate);
+                             try { saveTreesToLocalStorage(); console.log("LocalStorage updated (edit)."); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving updated data."); return; }
+                             const marker = markers[editingTreeId]; if (marker) { marker.setPopupContent(createPopupContent(treeToUpdate)); }
+                             populateLists(); setBottomSheetState('closed'); treeForm.reset(); imagePreview.classList.add('hidden'); editTreeIdInput.value = '';
+                             showNotification(`"${species}" tree updated.`);
+                         });
+                    } else { // --- Add Logic ---
+                         console.log("Executing ADD logic");
+                         processImageAndSave(() => {
+                             const newTree = { id: Date.now().toString(), type, species, notes, location: { lat, lng }, imageUrl: imageDataUrl || '', dateAdded: new Date().toISOString(), needsAttention: false };
+                             console.log("New tree object:", newTree);
+                             trees.push(newTree);
+                             try { saveTreesToLocalStorage(); console.log("LocalStorage updated (add)."); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving new data."); return; }
+                             addTreeMarker(newTree);
+                             populateLists(); setBottomSheetState('closed'); treeForm.reset(); imagePreview.classList.add('hidden');
+                             showNotification(`"${species}" tree added.`);
+                         });
                     }
                 }); // End of submit listener
 
