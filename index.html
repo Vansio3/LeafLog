@@ -147,7 +147,7 @@
         #add-fab-container.expanded #add-tree-fab i { transform: rotate(45deg); }
 
         /* Sub FABs (Spotted/Planted) */
-        .sub-fab { width: 45px; height: 45px; font-size: 0.8em; font-weight: 600; position: absolute; bottom: 5px; right: 5px; z-index: 1000; opacity: 0; transform: scale(0.5) translateY(10px); transition: opacity 0.2s ease-out, transform 0.2s ease-out; cursor: grab; /* Change cursor */ pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2px; text-align: center; line-height: 1.1; border-radius: 50%; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+        .sub-fab { width: 45px; height: 45px; font-size: 0.8em; font-weight: 600; position: absolute; bottom: 5px; right: 5px; z-index: 1000; opacity: 0; transform: scale(0.5) translateY(10px); transition: opacity 0.2s ease-out, transform 0.2s ease-out, visibility 0s linear; /* Add visibility transition */ cursor: grab; /* Change cursor */ pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2px; text-align: center; line-height: 1.1; border-radius: 50%; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
         .sub-fab:active { cursor: grabbing; } /* Change cursor while dragging */
         #add-fab-container.expanded .sub-fab { position: relative; bottom: auto; right: auto; opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
         #sub-fab-spotted { background-color: #fbbf24; color: #422006; }
@@ -429,6 +429,7 @@
             let currentSidebarView = 'sidebar-main-view'; // Track sidebar view
             let isDragging = false; let dragClone = null; let dragTreeType = null; let startX, startY, offsetX, offsetY;
             let hasDragged = false; // Flag to check if actual dragging occurred
+            let draggedOriginalFab = null; // Reference to the original FAB being dragged
 
             // --- Function Definitions ---
 
@@ -510,16 +511,19 @@
             // Drag Simulation Functions
             function startDrag(e) {
                 if (e.type === 'touchstart') e.preventDefault();
-                const fab = e.currentTarget;
+                const fab = e.currentTarget; // This IS the original FAB
                 dragTreeType = fab.dataset.treeType;
                 isDragging = true;
-                hasDragged = false; // Reset the flag here
+                hasDragged = false;
+                draggedOriginalFab = fab; // Store the reference
+
                 const touch = e.type === 'touchstart' ? e.touches[0] : e;
                 startX = touch.clientX;
                 startY = touch.clientY;
                 const rect = fab.getBoundingClientRect();
                 offsetX = startX - rect.left;
                 offsetY = startY - rect.top;
+
                 dragClone = fab.cloneNode(true);
                 dragClone.id = 'drag-clone';
                 dragClone.style.left = `${startX - offsetX}px`;
@@ -528,7 +532,12 @@
                 dragClone.style.color = window.getComputedStyle(fab).color;
                 document.body.appendChild(dragClone);
                 document.body.classList.add('dragging-active');
-                // REMOVED: Container collapse is handled in endDrag on success
+
+                // Hide the original FAB
+                if (draggedOriginalFab) {
+                    draggedOriginalFab.style.visibility = 'hidden';
+                }
+
                 map.dragging.disable();
                 if (map.doubleClickZoom) map.doubleClickZoom.disable();
             }
@@ -555,6 +564,12 @@
             }
 
             function endDrag(e) {
+                // Restore visibility of the original FAB FIRST
+                if (draggedOriginalFab) {
+                    draggedOriginalFab.style.visibility = 'visible';
+                }
+
+                // Now proceed with the rest of the endDrag logic
                 if (!isDragging) return; // Exit if not dragging
 
                 map.dragging.enable();
@@ -586,14 +601,12 @@
                     }
                 } else if (hasDragged) {
                     console.log("Dragged but dropped outside map area.");
-                    // Keep FABs expanded
                 } else {
                     console.log("Click detected, no drag action.");
-                    // Keep FABs expanded
                 }
 
                 // Collapse FABs only if a tree add was initiated
-                if (addedTree) { // Check the flag
+                if (addedTree) {
                     addFabContainer.classList.remove('expanded');
                 }
 
@@ -605,6 +618,7 @@
                 startY = null;
                 offsetX = null;
                 offsetY = null;
+                draggedOriginalFab = null; // Reset the stored reference
             }
 
 
