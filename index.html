@@ -388,7 +388,7 @@
         document.addEventListener('DOMContentLoaded', function() {
 
             // --- Map Initialization & Geolocation ---
-            const defaultCoords = [42.501511, 27.466138];
+            const defaultCoords = [42.5048, 27.4626]; 
             const map = L.map('map', { zoomControl: false }).setView(defaultCoords, 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM', maxZoom: 19 }).addTo(map);
             const currentLocationIcon = L.divIcon({ html: '<i class="fas fa-location-arrow text-blue-600 text-2xl"></i>', className: 'current-location-div-icon', iconSize: [24, 24], iconAnchor: [12, 12] });
