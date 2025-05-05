@@ -28,7 +28,7 @@
             transition: transform 0.3s ease-in-out;
             display: flex;
             flex-direction: column;
-            overflow-y: auto;
+            overflow: hidden; /* Prevent body scroll, manage scroll internally */
         }
         #sidebar-menu.open {
             transform: translateX(0);
@@ -40,6 +40,7 @@
             padding: 10px 15px;
             border-bottom: 1px solid #eee;
             background-color: #f9fafb; /* Light bg for header */
+            flex-shrink: 0; /* Prevent header from shrinking */
         }
          .sidebar-header h2 {
              font-size: 1.1rem;
@@ -50,26 +51,46 @@
          #sidebar-close-btn {
              background: none; border: none; font-size: 1.4rem; color: #6b7280; cursor: pointer; padding: 5px;
          }
-        .sidebar-content {
-            padding: 15px;
+        .sidebar-content-wrapper { /* Container for views */
+            overflow-y: auto; /* Allow this part to scroll */
             flex-grow: 1;
         }
-        .sidebar-section h3 {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #4b5563; /* gray-600 */
-            text-transform: uppercase;
-            margin-top: 1rem;
-            margin-bottom: 0.5rem;
-            padding-bottom: 0.3rem;
-            border-bottom: 1px solid #e5e7eb; /* gray-200 */
+        .sidebar-view {
+            display: none; /* Hide views by default */
+            /* Padding applied here or within the view as needed */
         }
-        .sidebar-section:first-child h3 {
-            margin-top: 0;
+        .sidebar-view.visible {
+            display: block; /* Show active view */
         }
-        .sidebar-list { /* Shared list style */
-             list-style: none; padding: 0; margin: 0;
+         /* Main menu view specifics */
+         #sidebar-main-view { padding: 1rem; } /* Add padding to main view */
+         .sidebar-section { margin-bottom: 0.5rem; }
+         .sidebar-category-trigger {
+             display: flex; justify-content: space-between; align-items: center; width: 100%;
+             padding: 12px 10px; text-align: left; font-size: 1rem;
+             border: 1px solid #e5e7eb; border-radius: 6px; background-color: white;
+             cursor: pointer; transition: background-color 0.2s;
          }
+         .sidebar-category-trigger:hover { background-color: #f3f4f6; }
+         .sidebar-category-trigger span:first-child { font-weight: 500; color: #374151; display: flex; align-items: center; }
+         .sidebar-category-trigger .count-badge { background-color: #e0e0e0; color: #555; padding: 0.1rem 0.5rem; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
+
+        /* List view specifics */
+         .sidebar-list-header {
+             display: flex; align-items: center; padding: 10px 15px; border-bottom: 1px solid #eee; background-color: #f9fafb; position: sticky; top: 0; /* Make header sticky within scrollable area */ z-index: 1; /* Ensure it stays above list items */
+         }
+         .sidebar-list-header h3 { font-size: 1rem; font-weight: 600; color: #333; margin: 0; flex-grow: 1; text-align: center; }
+         .sidebar-back-btn { background: none; border: none; font-size: 1.2rem; color: #4b5563; cursor: pointer; padding: 5px; min-width: 30px; text-align: left;}
+         .sidebar-list-header span { min-width: 30px; } /* Spacer for centering title */
+
+        .sidebar-list { list-style: none; padding: 0; margin: 0; }
+         /* Add padding to the UL container within list views if needed */
+         #sidebar-spotted-view .sidebar-list,
+         #sidebar-planted-view .sidebar-list,
+         #sidebar-reminders-view .sidebar-list {
+             padding: 0.5rem 1rem 1rem 1rem; /* Example padding */
+         }
+
 
         /* FAB General Styles */
         .fab { background-color: #16a34a; color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); cursor: pointer; transition: all 0.3s ease; border: none; }
@@ -78,13 +99,13 @@
         .fab i { font-size: 24px; transition: transform 0.3s ease; }
 
         /* Locate FAB Container */
-        .locate-fab-container { position: fixed; bottom: 20px; right: 15px; z-index: 1000; } /* Adjusted position */
+        .locate-fab-container { position: fixed; bottom: 20px; right: 15px; z-index: 1000; }
         .fab-secondary { background-color: #ffffff; color: #374151; width: 48px; height: 48px; }
         .fab-secondary:hover { background-color: #f3f4f6; }
         .fab-secondary i { font-size: 20px; }
 
         /* Add FAB Container & Expansion */
-        #add-fab-container { position: fixed; bottom: 80px; right: 15px; z-index: 1000; display: flex; flex-direction: column; align-items: center; gap: 12px; } /* Adjusted position */
+        #add-fab-container { position: fixed; bottom: 80px; right: 15px; z-index: 1000; display: flex; flex-direction: column; align-items: center; gap: 12px; }
         #add-tree-fab { position: relative; z-index: 1001; }
         #add-fab-container.expanded #add-tree-fab i { transform: rotate(45deg); }
 
@@ -104,9 +125,8 @@
 
         /* Bottom Sheet (FOR FORM ONLY) */
         #bottom-sheet { position: fixed; bottom: 0; left: 0; right: 0; background-color: white; border-top-left-radius: 16px; border-top-right-radius: 16px; box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15); z-index: 1003; /* Higher z-index than sidebar */ transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(100%); max-height: 90vh; display: flex; flex-direction: column; }
-        #bottom-sheet.active { transform: translateY(0); } /* Only one active state needed now */
-        .bottom-sheet-handle { padding: 10px; text-align: center; cursor: pointer; border-bottom: 1px solid #eee; display: none; } /* Hide handle? Or keep for potential dragging? Hiding for now. */
-        .bottom-sheet-handle-bar { width: 40px; height: 5px; background-color: #d1d5db; border-radius: 3px; margin: 0 auto; }
+        #bottom-sheet.active { transform: translateY(0); }
+        /* Removed handle styles .bottom-sheet-handle { display: none; } */
         .bottom-sheet-content { padding: 15px; overflow-y: auto; flex-grow: 1; }
         .bottom-sheet-view { display: none; } .bottom-sheet-view.visible { display: block; } /* Only add-form-view will use this */
         .bottom-sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eee; }
@@ -129,7 +149,7 @@
         .current-location-div-icon { background: none; border: none; }
 
         /* Print Styles */
-        @media print { body, html { height: auto; overflow: visible; } #map { height: 95vh !important; page-break-inside: avoid; width: 100% !important; } .no-print { display: none !important; } .header { position: relative !important; } #bottom-sheet, .locate-fab-container, #add-fab-container, #sidebar-menu { display: none !important; } /* Hide sidebar on print */ .current-location-div-icon { display: none !important; } }
+        @media print { body, html { height: auto; overflow: visible; } #map { height: 95vh !important; page-break-inside: avoid; width: 100% !important; } .no-print { display: none !important; } .header { position: relative !important; } #bottom-sheet, .locate-fab-container, #add-fab-container, #sidebar-menu { display: none !important; } .current-location-div-icon { display: none !important; } }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -144,34 +164,78 @@
     </header>
 
     <!-- Sidebar Menu -->
-    <div id="sidebar-menu" class="no-print">
-        <div class="sidebar-header">
-            <h2>Menu</h2>
-            <button id="sidebar-close-btn" aria-label="Close menu">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="sidebar-content">
-            <div class="sidebar-section">
-                <h3>Spotted Trees</h3>
-                <ul id="sidebar-spotted-list" class="sidebar-list">
-                    <li class="text-gray-500 italic p-2">Loading...</li>
-                </ul>
-            </div>
-            <div class="sidebar-section">
-                <h3>Planted Trees</h3>
-                <ul id="sidebar-planted-list" class="sidebar-list">
+     <div id="sidebar-menu" class="no-print">
+         <div class="sidebar-header">
+             <h2 id="sidebar-title">Menu</h2> <!-- Title managed by JS -->
+             <button id="sidebar-close-btn" aria-label="Close menu">
+                 <i class="fas fa-times"></i>
+             </button>
+         </div>
+         <!-- Container for switching views -->
+         <div class="sidebar-content-wrapper flex-grow overflow-y-auto">
+
+             <!-- Main Menu View (Visible Initially) -->
+             <div id="sidebar-main-view" class="sidebar-view visible p-4">
+                 <div class="sidebar-section">
+                     <button class="sidebar-category-trigger" data-target-view="sidebar-spotted-view">
+                         <span><i class="fas fa-binoculars mr-2 text-yellow-500"></i>Spotted Trees</span>
+                         <span id="sidebar-spotted-count" class="count-badge">0</span>
+                     </button>
+                 </div>
+                 <div class="sidebar-section">
+                     <button class="sidebar-category-trigger" data-target-view="sidebar-planted-view">
+                         <span><i class="fas fa-seedling mr-2 text-blue-500"></i>Planted Trees</span>
+                         <span id="sidebar-planted-count" class="count-badge">0</span>
+                     </button>
+                 </div>
+                 <div class="sidebar-section">
+                      <button class="sidebar-category-trigger" data-target-view="sidebar-reminders-view">
+                         <span><i class="fas fa-bell mr-2 text-orange-500"></i>Reminders</span>
+                         <span id="sidebar-reminder-count" class="count-badge">0</span>
+                     </button>
+                 </div>
+                 <!-- Add other main menu items here if needed -->
+             </div>
+
+             <!-- Spotted List View (Hidden Initially) -->
+             <div id="sidebar-spotted-view" class="sidebar-view hidden">
+                 <div class="sidebar-list-header">
+                     <button class="sidebar-back-btn" aria-label="Back to main menu"><i class="fas fa-arrow-left"></i></button>
+                     <h3>Spotted Trees</h3>
+                     <span></span> <!-- Spacer -->
+                 </div>
+                 <ul id="sidebar-spotted-list" class="sidebar-list p-4">
                      <li class="text-gray-500 italic p-2">Loading...</li>
-                </ul>
-            </div>
-            <div class="sidebar-section">
-                <h3>Reminders</h3>
-                <ul id="sidebar-reminders-list" class="sidebar-list">
+                 </ul>
+             </div>
+
+             <!-- Planted List View (Hidden Initially) -->
+             <div id="sidebar-planted-view" class="sidebar-view hidden">
+                  <div class="sidebar-list-header">
+                     <button class="sidebar-back-btn" aria-label="Back to main menu"><i class="fas fa-arrow-left"></i></button>
+                     <h3>Planted Trees</h3>
+                     <span></span> <!-- Spacer -->
+                 </div>
+                 <ul id="sidebar-planted-list" class="sidebar-list p-4">
                      <li class="text-gray-500 italic p-2">Loading...</li>
-                </ul>
-            </div>
-        </div>
-    </div>
+                 </ul>
+             </div>
+
+             <!-- Reminders List View (Hidden Initially) -->
+             <div id="sidebar-reminders-view" class="sidebar-view hidden">
+                  <div class="sidebar-list-header">
+                     <button class="sidebar-back-btn" aria-label="Back to main menu"><i class="fas fa-arrow-left"></i></button>
+                     <h3>Reminders</h3>
+                     <span></span> <!-- Spacer -->
+                 </div>
+                 <ul id="sidebar-reminders-list" class="sidebar-list p-4">
+                     <li class="text-gray-500 italic p-2">Loading...</li>
+                 </ul>
+             </div>
+
+         </div> <!-- End sidebar-content-wrapper -->
+     </div>
+
 
     <!-- Map -->
     <div id="map"></div>
@@ -192,16 +256,12 @@
 
     <!-- Bottom Sheet (FOR FORM ONLY) -->
     <div id="bottom-sheet" class="no-print">
-         <!-- Removed handle -->
-         <!-- <div class="bottom-sheet-handle"><div class="bottom-sheet-handle-bar"></div></div> -->
          <div class="bottom-sheet-content">
-            <!-- Removed main-menu-view, spotted-list-view, planted-list-view, reminders-list-view -->
-
             <!-- Add/Edit Form View -->
-            <div id="add-form-view" class="bottom-sheet-view visible"> <!-- Make visible by default as it's the only view -->
+            <div id="add-form-view" class="bottom-sheet-view visible"> <!-- Make visible by default -->
                  <div class="bottom-sheet-header">
                    <span></span> <!-- Spacer -->
-                   <h3><!-- Title set by JS --></h3>
+                   <h3 id="form-title"></h3> <!-- Give title an ID -->
                    <button class="bottom-sheet-close-btn" aria-label="Cancel add/edit tree"><i class="fas fa-times"></i></button>
                  </div>
                  <form id="tree-form" class="space-y-4">
@@ -264,14 +324,23 @@
             const sidebarMenu = document.getElementById('sidebar-menu');
             const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
             const headerMenuBtn = document.getElementById('header-menu-btn');
+            const sidebarContentWrapper = sidebarMenu.querySelector('.sidebar-content-wrapper');
+            const sidebarViews = sidebarContentWrapper.querySelectorAll('.sidebar-view');
+            const sidebarMainView = document.getElementById('sidebar-main-view');
+            const categoryTriggers = sidebarMainView.querySelectorAll('.sidebar-category-trigger');
+            const sidebarBackBtns = sidebarMenu.querySelectorAll('.sidebar-back-btn');
             const sidebarSpottedList = document.getElementById('sidebar-spotted-list');
             const sidebarPlantedList = document.getElementById('sidebar-planted-list');
             const sidebarRemindersList = document.getElementById('sidebar-reminders-list');
+            const sidebarSpottedCount = document.getElementById('sidebar-spotted-count');
+            const sidebarPlantedCount = document.getElementById('sidebar-planted-count');
+            const sidebarReminderCount = document.getElementById('sidebar-reminder-count');
+            const sidebarTitle = document.getElementById('sidebar-title');
             // Bottom Sheet (Form only)
             const bottomSheet = document.getElementById('bottom-sheet');
-            const addFormView = document.getElementById('add-form-view'); // Only view needed in sheet
-            const bottomSheetCloseBtn = bottomSheet.querySelector('.bottom-sheet-close-btn'); // Form close btn
-             const treeForm = document.getElementById('tree-form');
+            const addFormView = document.getElementById('add-form-view');
+            const bottomSheetCloseBtn = bottomSheet.querySelector('.bottom-sheet-close-btn');
+            const treeForm = document.getElementById('tree-form');
             const latInput = document.getElementById('lat');
             const lngInput = document.getElementById('lng');
             const typeSelect = document.getElementById('type');
@@ -282,7 +351,7 @@
             const previewImg = document.getElementById('preview-img');
             const cancelFormBtn = document.getElementById('cancel-form-btn');
             const editTreeIdInput = document.getElementById('edit-tree-id');
-            const addFormTitle = document.querySelector('#add-form-view h3');
+            const addFormTitle = document.getElementById('form-title'); // Use ID for form title
             // FABs
             const locateFab = document.getElementById('locate-fab');
             const addFabContainer = document.getElementById('add-fab-container');
@@ -292,103 +361,85 @@
             const mapContainer = document.getElementById('map');
             const notification = document.getElementById('notification');
 
-
             // --- State Variables ---
             let trees = JSON.parse(localStorage.getItem('leaflog_trees') || '[]');
             let markers = {};
-            // Remove bottom sheet state tracking, only need open/closed for form
-            // let currentBottomSheetView = 'main-menu-view';
-            // let currentBottomSheetState = 'state-handle';
+            let currentSidebarView = 'sidebar-main-view'; // Track sidebar view
             let isDragging = false; let dragClone = null; let dragTreeType = null; let startX, startY, offsetX, offsetY;
 
             // --- Function Definitions ---
 
             // Sidebar Menu Management
             function openSidebarMenu() {
-                 if (sidebarMenu) sidebarMenu.classList.add('open');
+                 if (sidebarMenu) {
+                    showSidebarView('sidebar-main-view'); // Always show main view first
+                    sidebarMenu.classList.add('open');
+                 }
             }
             function closeSidebarMenu() {
-                 if (sidebarMenu) sidebarMenu.classList.remove('open');
+                 if (sidebarMenu) {
+                     sidebarMenu.classList.remove('open');
+                     // Reset view to main after closing transition (optional)
+                     // setTimeout(() => showSidebarView('sidebar-main-view'), 300);
+                 }
             }
+             function showSidebarView(viewId) {
+                 sidebarViews.forEach(view => {
+                     // Use hidden class for visibility control
+                     view.classList.toggle('hidden', view.id !== viewId);
+                     view.classList.toggle('visible', view.id === viewId);
+                 });
+                 // Update sidebar title based on the view
+                 const targetViewElement = document.getElementById(viewId);
+                 const titleElement = targetViewElement?.querySelector('h3'); // Get h3 from the target view
+                 sidebarTitle.textContent = viewId === 'sidebar-main-view' ? 'Menu' : (titleElement?.textContent || 'Menu');
+
+                 currentSidebarView = viewId;
+                 if (sidebarContentWrapper) sidebarContentWrapper.scrollTop = 0; // Scroll to top
+             }
 
              // Bottom Sheet (Form) Management
-             function openFormSheet() {
-                 if (bottomSheet) bottomSheet.classList.add('active');
-             }
-             function closeFormSheet() {
-                 if (bottomSheet) bottomSheet.classList.remove('active');
-                 editTreeIdInput.value = ''; // Clear edit state when closing
-                 treeForm.reset(); // Reset form fields
-                 imagePreview.classList.add('hidden'); // Hide preview
-             }
+             function openFormSheet() { if (bottomSheet) bottomSheet.classList.add('active'); }
+             function closeFormSheet() { if (bottomSheet) bottomSheet.classList.remove('active'); editTreeIdInput.value = ''; treeForm.reset(); imagePreview.classList.add('hidden'); }
 
             // Form Handling
-            function openAddForm(lat, lng, treeType) {
-                console.log(`Opening ADD form for ${treeType} at ${lat}, ${lng}`);
-                editTreeIdInput.value = ''; addFormTitle.textContent = 'Add New Tree';
-                latInput.value = lat; lngInput.value = lng; typeSelect.value = treeType;
-                speciesInput.value = ''; notesInput.value = ''; imageInput.value = null;
-                imagePreview.classList.add('hidden');
-                openFormSheet(); // Open the bottom sheet
-                speciesInput.focus();
-            }
-            function openEditForm(treeId) {
-                const tree = trees.find(t => t.id === treeId);
-                if (!tree) { console.error("Tree not found for editing:", treeId); return; }
-                console.log(`Opening EDIT form for tree ID: ${treeId}`);
-                map.closePopup();
-                editTreeIdInput.value = treeId; addFormTitle.textContent = 'Edit Tree';
-                latInput.value = tree.location.lat; lngInput.value = tree.location.lng; typeSelect.value = tree.type;
-                speciesInput.value = tree.species; notesInput.value = tree.notes || ''; imageInput.value = null;
-                if (tree.imageUrl) { previewImg.src = tree.imageUrl; imagePreview.classList.remove('hidden'); }
-                else { imagePreview.classList.add('hidden'); }
-                 openFormSheet(); // Open the bottom sheet
-                speciesInput.focus();
-            }
+            function openAddForm(lat, lng, treeType) { editTreeIdInput.value = ''; addFormTitle.textContent = 'Add New Tree'; latInput.value = lat; lngInput.value = lng; typeSelect.value = treeType; speciesInput.value = ''; notesInput.value = ''; imageInput.value = null; imagePreview.classList.add('hidden'); openFormSheet(); speciesInput.focus(); }
+            function openEditForm(treeId) { const tree = trees.find(t => t.id === treeId); if (!tree) { console.error("Tree not found for editing:", treeId); return; } map.closePopup(); editTreeIdInput.value = treeId; addFormTitle.textContent = 'Edit Tree'; latInput.value = tree.location.lat; lngInput.value = tree.location.lng; typeSelect.value = tree.type; speciesInput.value = tree.species; notesInput.value = tree.notes || ''; imageInput.value = null; if (tree.imageUrl) { previewImg.src = tree.imageUrl; imagePreview.classList.remove('hidden'); } else { imagePreview.classList.add('hidden'); } openFormSheet(); speciesInput.focus(); }
 
             // Local Storage & Marker Management
             function saveTreesToLocalStorage() { localStorage.setItem('leaflog_trees', JSON.stringify(trees)); }
             function addTreeMarker(tree) { const marker = L.marker([tree.location.lat, tree.location.lng]).addTo(map); markers[tree.id] = marker; marker.on('popupopen', () => attachPopupListeners(tree.id)); marker.bindPopup(() => createPopupContent(tree)); }
             function createPopupContent(tree) { const reminderButtonText = tree.needsAttention ? 'Remove Reminder' : 'Add Reminder'; const reminderButtonClass = tree.needsAttention ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-blue-500 hover:bg-blue-600'; let c = `<div class="popup-content"><h3 class="text-lg font-semibold">${tree.species}</h3><p class="text-sm text-gray-600"><strong>Type:</strong> ${tree.type}</p>`; if (tree.notes) c += `<p class="text-sm mt-1"><strong>Notes:</strong> ${tree.notes}</p>`; if (tree.imageUrl) c += `<img src="${tree.imageUrl}" alt="${tree.species}" class="popup-image mt-2">`; c += `<button class="toggle-reminder-btn text-xs text-white px-2 py-1 rounded mt-3 ${reminderButtonClass}" data-tree-id="${tree.id}"><i class="fas ${tree.needsAttention ? 'fa-bell-slash' : 'fa-bell'} mr-1"></i>${reminderButtonText}</button>`; c += `<div class="mt-3 pt-2 border-t border-gray-200 flex justify-end space-x-2"><button class="popup-edit-btn text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded" data-tree-id="${tree.id}" aria-label="Edit tree"><i class="fas fa-edit mr-1"></i>Edit</button><button class="popup-delete-btn text-xs text-red-600 hover:text-red-800 px-2 py-1 rounded" data-tree-id="${tree.id}" aria-label="Delete tree"><i class="fas fa-trash-alt mr-1"></i>Delete</button></div>`; c += `</div>`; return c; }
             function attachPopupListeners(treeId) { const popupNode = document.querySelector(`.leaflet-popup-content`); if (!popupNode) { console.error("Cannot find popup content node."); return; } const reminderBtn = popupNode.querySelector(`.toggle-reminder-btn[data-tree-id="${treeId}"]`); if (reminderBtn) { reminderBtn.replaceWith(reminderBtn.cloneNode(true)); popupNode.querySelector(`.toggle-reminder-btn[data-tree-id="${treeId}"]`).addEventListener('click', handleReminderToggle); } const editBtn = popupNode.querySelector(`.popup-edit-btn[data-tree-id="${treeId}"]`); if (editBtn) { editBtn.replaceWith(editBtn.cloneNode(true)); popupNode.querySelector(`.popup-edit-btn[data-tree-id="${treeId}"]`).addEventListener('click', handleEditTree); } const deleteBtn = popupNode.querySelector(`.popup-delete-btn[data-tree-id="${treeId}"]`); if (deleteBtn) { deleteBtn.replaceWith(deleteBtn.cloneNode(true)); popupNode.querySelector(`.popup-delete-btn[data-tree-id="${treeId}"]`).addEventListener('click', handleDeleteTree); } }
-            function handleReminderToggle(event) { const b=event.target.closest('button'); const tId=b.getAttribute('data-tree-id'); const tIdx=trees.findIndex(t=>t.id===tId); if(tIdx!==-1){trees[tIdx].needsAttention=!trees[tIdx].needsAttention; saveTreesToLocalStorage(); const m=markers[tId]; if(m&&m.isPopupOpen()){m.setPopupContent(createPopupContent(trees[tIdx])); attachPopupListeners(tId); } populateSidebarMenu(); showNotification(trees[tIdx].needsAttention?'Reminder added!':'Reminder removed.');} } // Updated to call populateSidebarMenu
+            function handleReminderToggle(event) { const b=event.target.closest('button'); const tId=b.getAttribute('data-tree-id'); const tIdx=trees.findIndex(t=>t.id===tId); if(tIdx!==-1){trees[tIdx].needsAttention=!trees[tIdx].needsAttention; saveTreesToLocalStorage(); const m=markers[tId]; if(m&&m.isPopupOpen()){m.setPopupContent(createPopupContent(trees[tIdx])); attachPopupListeners(tId); } populateSidebarMenu(); showNotification(trees[tIdx].needsAttention?'Reminder added!':'Reminder removed.');} }
             function handleEditTree(event) { const button = event.target.closest('button'); const treeId = button.dataset.treeId; openEditForm(treeId); }
-            function handleDeleteTree(event) { const button = event.target.closest('button'); const treeId = button.dataset.treeId; const treeIndex = trees.findIndex(t => t.id === treeId); if (treeIndex === -1) { console.error("Tree to delete not found:", treeId); return; } const treeSpecies = trees[treeIndex].species; if (!window.confirm(`Are you sure you want to delete the ${treeSpecies} tree? This cannot be undone.`)) { return; } console.log("Deleting tree:", treeId); map.closePopup(); const marker = markers[treeId]; if (marker) { map.removeLayer(marker); delete markers[treeId]; } else { console.warn("Marker not found for deletion:", treeId); } trees.splice(treeIndex, 1); try { saveTreesToLocalStorage(); } catch (error) { console.error("LocalStorage Error on delete:", error); showNotification("Error saving deletion."); } populateSidebarMenu(); showNotification(`"${treeSpecies}" tree deleted.`); } // Updated to call populateSidebarMenu
+            function handleDeleteTree(event) { const button = event.target.closest('button'); const treeId = button.dataset.treeId; const treeIndex = trees.findIndex(t => t.id === treeId); if (treeIndex === -1) return; const treeSpecies = trees[treeIndex].species; if (!window.confirm(`Delete ${treeSpecies}?`)) return; map.closePopup(); const marker = markers[treeId]; if (marker) { map.removeLayer(marker); delete markers[treeId]; } trees.splice(treeIndex, 1); try { saveTreesToLocalStorage(); } catch (error) { showNotification("Error saving deletion."); } populateSidebarMenu(); showNotification(`"${treeSpecies}" deleted.`); }
 
             // Sidebar Menu List Population
             function populateSidebarMenu() {
-                // Check elements exist
-                if (!sidebarSpottedList || !sidebarPlantedList || !sidebarRemindersList) {
-                    console.error("One or more sidebar list elements not found. Aborting sidebar population.");
-                    return;
-                }
+                if (!sidebarSpottedList || !sidebarPlantedList || !sidebarRemindersList || !sidebarSpottedCount || !sidebarPlantedCount || !sidebarReminderCount) { console.error("Sidebar list/count elements missing."); return; }
                 sidebarSpottedList.innerHTML = ''; sidebarPlantedList.innerHTML = ''; sidebarRemindersList.innerHTML = '';
                 let sc=0, pc=0, rc=0;
                 const sorted=[...trees].sort((a,b)=>a.species.localeCompare(b.species));
 
                 sorted.forEach(tree=>{
                      const itemHTML=`<span class="flex-grow mr-2 overflow-hidden"><i class="fas fa-tree mr-2 ${tree.type==='Planted'?'text-blue-600':'text-green-600'}"></i><span class="font-medium">${tree.species}</span>${tree.notes?`<span class="text-xs text-gray-500 block ml-5 truncate" title="${tree.notes}">(${tree.notes.substring(0,30)}${tree.notes.length>30?'...':''})</span>`:''}</span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`;
-                     const action=()=>{
-                        const targetTree=trees.find(t=>t.id===tree.id);
-                        if(targetTree){
-                           closeSidebarMenu(); // Close sidebar before panning
-                           map.setView(targetTree.location, 17, {animate:true});
-                           setTimeout(()=>{if(markers[targetTree.id]) markers[targetTree.id].openPopup();}, 300);
-                        }
-                     };
+                     const action=()=>{ const targetTree=trees.find(t=>t.id===tree.id); if(targetTree){ closeSidebarMenu(); map.setView(targetTree.location, 17, {animate:true}); setTimeout(()=>{if(markers[targetTree.id]) markers[targetTree.id].openPopup();}, 300); }};
                      const listItem=document.createElement('li'); listItem.className='list-item'; listItem.innerHTML=itemHTML; listItem.querySelector('.view-on-map-btn').addEventListener('click',action);
 
-                    if(tree.type==='Spotted'){ sidebarSpottedList.appendChild(listItem); sc++;}
-                    else if(tree.type==='Planted'){ sidebarPlantedList.appendChild(listItem); pc++;}
+                    let targetList;
+                    if(tree.type==='Spotted'){ targetList = sidebarSpottedList; sc++; }
+                    else if(tree.type==='Planted'){ targetList = sidebarPlantedList; pc++; }
+                    if(targetList) targetList.appendChild(listItem);
 
                     if(tree.needsAttention){
                         const reminderItem=document.createElement('li'); reminderItem.className='list-item'; reminderItem.innerHTML=`<span class="flex-grow mr-2 overflow-hidden"><i class="fas fa-bell mr-2 text-orange-500"></i><span class="font-medium">${tree.species}</span> <span class="text-xs text-gray-500">(${tree.type})</span></span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`; reminderItem.querySelector('.view-on-map-btn').addEventListener('click',action);
-                        sidebarRemindersList.appendChild(reminderItem);
-                        rc++;
+                        sidebarRemindersList.appendChild(reminderItem); rc++;
                     }
                 });
-
-                // No counts needed in sidebar, but placeholders are useful
+                // Update counts in main menu view
+                sidebarSpottedCount.textContent=sc; sidebarPlantedCount.textContent=pc; sidebarReminderCount.textContent=rc;
+                // Set Placeholders
                 const placeholderHTML='<li class="text-gray-500 italic p-4 text-center">Nothing here yet.</li>';
                 if(sc===0) sidebarSpottedList.innerHTML=placeholderHTML;
                 if(pc===0) sidebarPlantedList.innerHTML=placeholderHTML;
@@ -407,23 +458,31 @@
             // --- Event Listeners & Initialization Function ---
             function initializeApp() {
                 loadExistingTrees();
-                populateSidebarMenu(); // Populate new sidebar
-                // setBottomSheetState('state-handle', 'main-menu-view'); // Don't open bottom sheet initially
+                populateSidebarMenu(); // Populate sidebar
+                // Don't open bottom sheet initially
 
                 // --- Add Event Listeners ---
 
                 // Sidebar Menu Listeners
                 headerMenuBtn.addEventListener('click', openSidebarMenu);
                 sidebarCloseBtn.addEventListener('click', closeSidebarMenu);
-                // Close sidebar on outside click
                 document.addEventListener('click', (e) => {
-                    if (sidebarMenu && sidebarMenu.classList.contains('open') &&
-                        !sidebarMenu.contains(e.target) && // Clicked outside sidebar
-                        e.target !== headerMenuBtn && !headerMenuBtn.contains(e.target) // And not on header button
-                       ) {
-                        closeSidebarMenu();
-                    }
+                    if (sidebarMenu && sidebarMenu.classList.contains('open') && !sidebarMenu.contains(e.target) && e.target !== headerMenuBtn && !headerMenuBtn.contains(e.target)) {
+                         closeSidebarMenu();
+                     }
                 });
+                // Sidebar View Navigation
+                categoryTriggers.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const targetViewId = button.dataset.targetView;
+                        showSidebarView(targetViewId);
+                    });
+                });
+                 sidebarBackBtns.forEach(button => {
+                     button.addEventListener('click', () => {
+                         showSidebarView('sidebar-main-view');
+                     });
+                 });
 
                 // Bottom Sheet (Form) Listeners
                 bottomSheetCloseBtn.addEventListener('click', closeFormSheet);
@@ -443,43 +502,39 @@
 
                 // Form Submit Listener (handles both Add and Edit)
                 treeForm.addEventListener('submit', (e) => {
-                    console.log("Form submit triggered.");
                     e.preventDefault();
                     const editingTreeId = editTreeIdInput.value;
                     const lat = parseFloat(latInput.value); const lng = parseFloat(lngInput.value); const type = typeSelect.value; const species = speciesInput.value; const notes = notesInput.value; const imageFile = imageInput.files[0]; let imageDataUrl = '';
-                    console.log(`Submitting: Mode=${editingTreeId ? 'Edit' : 'Add'}, ID=${editingTreeId || 'N/A'}, ...`);
                     if (!type || !species || isNaN(lat) || isNaN(lng)) { console.error("Validation failed"); showNotification("Error: Please fill required fields."); return; }
 
                     const processImageAndSave = (saveCallback) => {
                          if(imageFile){
-                             console.log("Processing new image..."); const reader = new FileReader();
-                             reader.onload = (e) => { console.log("FileReader onload"); imageDataUrl = e.target.result; saveCallback(); };
+                             const reader = new FileReader();
+                             reader.onload = (e) => { imageDataUrl = e.target.result; saveCallback(); };
                              reader.onerror = (error) => { console.error("FileReader Error:", error); showNotification("Error reading image."); };
                              reader.readAsDataURL(imageFile);
-                         } else { console.log("No new image."); imageDataUrl = null; saveCallback(); }
+                         } else { imageDataUrl = null; saveCallback(); }
                     };
 
                     if (editingTreeId) { // --- Edit Logic ---
-                         console.log("Executing EDIT logic"); const treeIndex = trees.findIndex(t => t.id === editingTreeId);
+                         const treeIndex = trees.findIndex(t => t.id === editingTreeId);
                          if (treeIndex === -1) { console.error("Tree to edit not found"); showNotification("Error: Could not find tree to update."); return; }
                          processImageAndSave(() => {
                              const treeToUpdate = trees[treeIndex];
                              treeToUpdate.species = species; treeToUpdate.notes = notes; treeToUpdate.location.lat = lat; treeToUpdate.location.lng = lng; treeToUpdate.type = type;
                              if (imageDataUrl !== null) { treeToUpdate.imageUrl = imageDataUrl; }
-                             console.log("Updated tree object:", treeToUpdate);
-                             try { saveTreesToLocalStorage(); console.log("LocalStorage updated (edit)."); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving updated data."); return; }
+                             try { saveTreesToLocalStorage(); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving updated data."); return; }
                              const marker = markers[editingTreeId]; if (marker) { marker.setPopupContent(createPopupContent(treeToUpdate)); }
-                             populateSidebarMenu(); closeFormSheet(); // Use new close function
+                             populateSidebarMenu(); closeFormSheet();
                              showNotification(`"${species}" tree updated.`);
                          });
                     } else { // --- Add Logic ---
-                         console.log("Executing ADD logic");
                          processImageAndSave(() => {
                              const newTree = { id: Date.now().toString(), type, species, notes, location: { lat, lng }, imageUrl: imageDataUrl || '', dateAdded: new Date().toISOString(), needsAttention: false };
-                             console.log("New tree object:", newTree); trees.push(newTree);
-                             try { saveTreesToLocalStorage(); console.log("LocalStorage updated (add)."); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving new data."); return; }
+                             trees.push(newTree);
+                             try { saveTreesToLocalStorage(); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving new data."); return; }
                              addTreeMarker(newTree);
-                             populateSidebarMenu(); closeFormSheet(); // Use new close function
+                             populateSidebarMenu(); closeFormSheet();
                              showNotification(`"${species}" tree added.`);
                          });
                     }
