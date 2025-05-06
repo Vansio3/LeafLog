@@ -462,11 +462,12 @@
             const mapContainer = document.getElementById('map');
             const notification = document.getElementById('notification');
             const cancelZone = document.getElementById('cancel-zone');
-            const mapToggleFab = document.getElementById('map-toggle-fab'); // Map Toggle Button
+            const mapToggleFab = document.getElementById('map-toggle-fab');
 
             // --- State Variables ---
             let trees = JSON.parse(localStorage.getItem('leaflog_trees') || '[]');
             let markers = {};
+            let provisionalMarker = null; // To hold the marker added on drop, before saving
             let currentSidebarView = 'sidebar-main-view';
             let isDragging = false; let dragClone = null; let dragTreeType = null; let startX, startY, offsetX, offsetY;
             let hasDragged = false;
@@ -475,36 +476,23 @@
             // --- Function Definitions ---
 
             // Sidebar Menu Management
-            function openSidebarMenu() {
-                 if (sidebarMenu) {
-                    showSidebarView('sidebar-main-view');
-                    sidebarMenu.classList.add('open');
-                 }
-            }
-            function closeSidebarMenu() {
-                 if (sidebarMenu) {
-                     sidebarMenu.classList.remove('open');
-                 }
-            }
-             function showSidebarView(viewId) {
-                 sidebarViews.forEach(view => {
-                     view.classList.toggle('hidden', view.id !== viewId);
-                     view.classList.toggle('visible', view.id === viewId);
-                 });
-                 const targetViewElement = document.getElementById(viewId);
-                 const titleElement = targetViewElement?.querySelector('h3');
-                 sidebarTitle.textContent = viewId === 'sidebar-main-view' ? 'Menu' : (titleElement?.textContent || 'Menu');
-                 currentSidebarView = viewId;
-                 if (sidebarContentWrapper) sidebarContentWrapper.scrollTop = 0;
-             }
+            function openSidebarMenu() { if (sidebarMenu) { showSidebarView('sidebar-main-view'); sidebarMenu.classList.add('open'); } }
+            function closeSidebarMenu() { if (sidebarMenu) { sidebarMenu.classList.remove('open'); } }
+            function showSidebarView(viewId) { sidebarViews.forEach(view => { view.classList.toggle('hidden', view.id !== viewId); view.classList.toggle('visible', view.id === viewId); }); const targetViewElement = document.getElementById(viewId); const titleElement = targetViewElement?.querySelector('h3'); sidebarTitle.textContent = viewId === 'sidebar-main-view' ? 'Menu' : (titleElement?.textContent || 'Menu'); currentSidebarView = viewId; if (sidebarContentWrapper) sidebarContentWrapper.scrollTop = 0; }
 
-             // Bottom Sheet (Form) Management
-             function openFormSheet() { if (bottomSheet) bottomSheet.classList.add('active'); }
-             function closeFormSheet() { if (bottomSheet) bottomSheet.classList.remove('active'); editTreeIdInput.value = ''; treeForm.reset(); imagePreview.classList.add('hidden'); previewImg.src = '#'; }
+            // Bottom Sheet (Form) Management
+            function openFormSheet() { if (bottomSheet) bottomSheet.classList.add('active'); }
+            function closeFormSheet() {
+                if (bottomSheet) bottomSheet.classList.remove('active');
+                editTreeIdInput.value = ''; // Always clear edit ID when closing
+                treeForm.reset();
+                imagePreview.classList.add('hidden');
+                previewImg.src = '#';
+            }
 
             // Form Handling
             function openAddForm(lat, lng, treeType) {
-                editTreeIdInput.value = '';
+                editTreeIdInput.value = ''; // Crucial: ensures this is an "add" operation
                 addFormTitle.textContent = 'Add New Tree';
                 latInput.value = lat;
                 lngInput.value = lng;
@@ -515,16 +503,12 @@
                 imagePreview.classList.add('hidden');
                 previewImg.src = '#';
                 openFormSheet();
-                // speciesInput.focus(); // Focus removed
             }
             function openEditForm(treeId) {
                 const tree = trees.find(t => t.id === treeId);
-                if (!tree) {
-                    console.error("Tree not found for editing:", treeId);
-                    return;
-                }
+                if (!tree) { console.error("Tree not found for editing:", treeId); return; }
                 map.closePopup();
-                editTreeIdInput.value = treeId;
+                editTreeIdInput.value = treeId; // Crucial: ensures this is an "edit" operation
                 addFormTitle.textContent = 'Edit Tree';
                 latInput.value = tree.location.lat;
                 lngInput.value = tree.location.lng;
@@ -532,15 +516,8 @@
                 speciesInput.value = tree.species;
                 notesInput.value = tree.notes || '';
                 imageInput.value = null;
-                if (tree.imageUrl) {
-                    previewImg.src = tree.imageUrl;
-                    imagePreview.classList.remove('hidden');
-                } else {
-                    imagePreview.classList.add('hidden');
-                    previewImg.src = '#';
-                }
+                if (tree.imageUrl) { previewImg.src = tree.imageUrl; imagePreview.classList.remove('hidden'); } else { imagePreview.classList.add('hidden'); previewImg.src = '#'; }
                 openFormSheet();
-                // speciesInput.focus(); // Focus removed
             }
 
             // Local Storage & Marker Management
@@ -553,33 +530,7 @@
             function handleDeleteTree(event) { const button = event.target.closest('button'); const treeId = button.dataset.treeId; const treeIndex = trees.findIndex(t => t.id === treeId); if (treeIndex === -1) return; const treeSpecies = trees[treeIndex].species; if (!window.confirm(`Delete ${treeSpecies}?`)) return; map.closePopup(); const marker = markers[treeId]; if (marker) { map.removeLayer(marker); delete markers[treeId]; } trees.splice(treeIndex, 1); try { saveTreesToLocalStorage(); } catch (error) { showNotification("Error saving deletion."); } populateSidebarMenu(); showNotification(`"${treeSpecies}" deleted.`); }
 
             // Sidebar Menu List Population
-            function populateSidebarMenu() {
-                if (!sidebarSpottedList || !sidebarPlantedList || !sidebarRemindersList || !sidebarSpottedCount || !sidebarPlantedCount || !sidebarReminderCount) { console.error("Sidebar list/count elements missing."); return; }
-                sidebarSpottedList.innerHTML = ''; sidebarPlantedList.innerHTML = ''; sidebarRemindersList.innerHTML = '';
-                let sc=0, pc=0, rc=0;
-                const sorted=[...trees].sort((a,b)=>a.species.localeCompare(b.species));
-                const placeholderHTML='<li class="text-gray-500 italic p-4 text-center">Nothing here yet.</li>';
-
-                sorted.forEach(tree=>{
-                     const itemHTML=`<span class="flex-grow mr-2 overflow-hidden"><i class="fas fa-tree mr-2 ${tree.type==='Planted'?'text-blue-600':'text-green-600'}"></i><span class="font-medium">${tree.species}</span>${tree.notes?`<span class="text-xs text-gray-500 block ml-5 truncate" title="${tree.notes}">(${tree.notes.substring(0,30)}${tree.notes.length>30?'...':''})</span>`:''}</span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`;
-                     const action=()=>{ const targetTree=trees.find(t=>t.id===tree.id); if(targetTree){ closeSidebarMenu(); map.setView(targetTree.location, 17, {animate:true}); setTimeout(()=>{if(markers[targetTree.id]) markers[targetTree.id].openPopup();}, 300); }};
-                     const listItem=document.createElement('li'); listItem.className='list-item'; listItem.innerHTML=itemHTML; listItem.querySelector('.view-on-map-btn').addEventListener('click',action);
-
-                    let targetList;
-                    if(tree.type==='Spotted'){ targetList = sidebarSpottedList; sc++; }
-                    else if(tree.type==='Planted'){ targetList = sidebarPlantedList; pc++; }
-                    if(targetList) targetList.appendChild(listItem);
-
-                    if(tree.needsAttention){
-                        const reminderItem=document.createElement('li'); reminderItem.className='list-item'; reminderItem.innerHTML=`<span class="flex-grow mr-2 overflow-hidden"><i class="fas fa-bell mr-2 text-orange-500"></i><span class="font-medium">${tree.species}</span> <span class="text-xs text-gray-500">(${tree.type})</span></span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`; reminderItem.querySelector('.view-on-map-btn').addEventListener('click',action);
-                        sidebarRemindersList.appendChild(reminderItem); rc++;
-                    }
-                });
-                sidebarSpottedCount.textContent=sc; sidebarPlantedCount.textContent=pc; sidebarReminderCount.textContent=rc;
-                if(sc===0) sidebarSpottedList.innerHTML=placeholderHTML;
-                if(pc===0) sidebarPlantedList.innerHTML=placeholderHTML;
-                if(rc===0) sidebarRemindersList.innerHTML=placeholderHTML;
-            }
+            function populateSidebarMenu() { if (!sidebarSpottedList || !sidebarPlantedList || !sidebarRemindersList || !sidebarSpottedCount || !sidebarPlantedCount || !sidebarReminderCount) { console.error("Sidebar list/count elements missing."); return; } sidebarSpottedList.innerHTML = ''; sidebarPlantedList.innerHTML = ''; sidebarRemindersList.innerHTML = ''; let sc=0, pc=0, rc=0; const sorted=[...trees].sort((a,b)=>a.species.localeCompare(b.species)); const placeholderHTML='<li class="text-gray-500 italic p-4 text-center">Nothing here yet.</li>'; sorted.forEach(tree=>{ const itemHTML=`<span class="flex-grow mr-2 overflow-hidden"><i class="fas fa-tree mr-2 ${tree.type==='Planted'?'text-blue-600':'text-green-600'}"></i><span class="font-medium">${tree.species}</span>${tree.notes?`<span class="text-xs text-gray-500 block ml-5 truncate" title="${tree.notes}">(${tree.notes.substring(0,30)}${tree.notes.length>30?'...':''})</span>`:''}</span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`; const action=()=>{ const targetTree=trees.find(t=>t.id===tree.id); if(targetTree){ closeSidebarMenu(); map.setView(targetTree.location, 17, {animate:true}); setTimeout(()=>{if(markers[targetTree.id]) markers[targetTree.id].openPopup();}, 300); }}; const listItem=document.createElement('li'); listItem.className='list-item'; listItem.innerHTML=itemHTML; listItem.querySelector('.view-on-map-btn').addEventListener('click',action); let targetList; if(tree.type==='Spotted'){ targetList = sidebarSpottedList; sc++; } else if(tree.type==='Planted'){ targetList = sidebarPlantedList; pc++; } if(targetList) targetList.appendChild(listItem); if(tree.needsAttention){ const reminderItem=document.createElement('li'); reminderItem.className='list-item'; reminderItem.innerHTML=`<span class="flex-grow mr-2 overflow-hidden"><i class="fas fa-bell mr-2 text-orange-500"></i><span class="font-medium">${tree.species}</span> <span class="text-xs text-gray-500">(${tree.type})</span></span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`; reminderItem.querySelector('.view-on-map-btn').addEventListener('click',action); sidebarRemindersList.appendChild(reminderItem); rc++; } }); sidebarSpottedCount.textContent=sc; sidebarPlantedCount.textContent=pc; sidebarReminderCount.textContent=rc; if(sc===0) sidebarSpottedList.innerHTML=placeholderHTML; if(pc===0) sidebarPlantedList.innerHTML=placeholderHTML; if(rc===0) sidebarRemindersList.innerHTML=placeholderHTML; }
 
             // Notification
             function showNotification(message) { document.getElementById('notification-text').textContent=message; notification.classList.remove('translate-x-full'); notification.classList.add('-translate-x-4'); setTimeout(()=>{notification.classList.remove('-translate-x-4'); notification.classList.add('translate-x-full');},3000); }
@@ -587,175 +538,58 @@
             function loadExistingTrees() { trees.forEach(tree => { if (tree.needsAttention === undefined) tree.needsAttention = false; addTreeMarker(tree); }); }
 
             // Map View Toggle Function
-             function toggleMapView() {
-                 const iconElement = mapToggleFab.querySelector('i');
-                 if (currentMapLayer === 'osm') {
-                     map.removeLayer(osmLayer);
-                     satelliteLayer.addTo(map);
-                     currentMapLayer = 'satellite';
-                     mapToggleFab.setAttribute('aria-label', 'Switch to Street View');
-                     iconElement.classList.remove('fa-satellite');
-                     iconElement.classList.add('fa-map');
-                 } else {
-                     map.removeLayer(satelliteLayer);
-                     osmLayer.addTo(map);
-                     currentMapLayer = 'osm';
-                     mapToggleFab.setAttribute('aria-label', 'Switch to Satellite View');
-                     iconElement.classList.remove('fa-map');
-                     iconElement.classList.add('fa-satellite');
-                 }
-             }
+            function toggleMapView() { const iconElement = mapToggleFab.querySelector('i'); if (currentMapLayer === 'osm') { map.removeLayer(osmLayer); satelliteLayer.addTo(map); currentMapLayer = 'satellite'; mapToggleFab.setAttribute('aria-label', 'Switch to Street View'); iconElement.classList.remove('fa-satellite'); iconElement.classList.add('fa-map'); } else { map.removeLayer(satelliteLayer); osmLayer.addTo(map); currentMapLayer = 'osm'; mapToggleFab.setAttribute('aria-label', 'Switch to Satellite View'); iconElement.classList.remove('fa-map'); iconElement.classList.add('fa-satellite'); } }
 
             // Drag Simulation Functions
-            function startDrag(e) {
-                if (e.type === 'touchstart') e.preventDefault();
-                const fab = e.currentTarget;
-                dragTreeType = fab.dataset.treeType;
-                isDragging = true;
-                hasDragged = false;
-                draggedOriginalFab = fab;
-
-                const touch = e.type === 'touchstart' ? e.touches[0] : e;
-                startX = touch.clientX;
-                startY = touch.clientY;
-                const rect = fab.getBoundingClientRect();
-                offsetX = startX - rect.left;
-                offsetY = startY - rect.top;
-
-                dragClone = fab.cloneNode(true);
-                dragClone.id = 'drag-clone';
-                dragClone.style.left = `${startX - offsetX}px`;
-                dragClone.style.top = `${startY - offsetY}px`;
-                dragClone.style.backgroundColor = window.getComputedStyle(fab).backgroundColor;
-                dragClone.style.color = window.getComputedStyle(fab).color;
-                document.body.appendChild(dragClone);
-                document.body.classList.add('dragging-active');
-
-                if (draggedOriginalFab) {
-                    draggedOriginalFab.style.visibility = 'hidden';
-                }
-                if (cancelZone) cancelZone.classList.add('visible');
-
-                map.dragging.disable();
-                if (map.doubleClickZoom) map.doubleClickZoom.disable();
-            }
-
-            function dragMove(e) {
-                if (!isDragging || !dragClone) return;
-                if (e.type === 'touchmove') e.preventDefault();
-                const touch = e.type === 'touchmove' ? e.touches[0] : e;
-                const currentX = touch.clientX;
-                const currentY = touch.clientY;
-
-                const deltaX = currentX - startX;
-                const deltaY = currentY - startY;
-                if (!hasDragged && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
-                    hasDragged = true;
-                }
-
-                dragClone.style.left = `${currentX - offsetX}px`;
-                dragClone.style.top = `${currentY - offsetY}px`;
-
-                // Use visibility hidden to avoid disrupting layout for elementFromPoint
-                dragClone.style.visibility = 'hidden';
-                const elementUnderPointer = document.elementFromPoint(currentX, currentY);
-                dragClone.style.visibility = 'visible'; // Make it visible again immediately
-
-                const isOverCancelZone = cancelZone && (cancelZone === elementUnderPointer || cancelZone.contains(elementUnderPointer));
-                if (cancelZone) cancelZone.classList.toggle('drag-over', isOverCancelZone);
-                mapContainer.classList.toggle('drag-over', mapContainer.contains(elementUnderPointer) && !isOverCancelZone);
-            }
-
+            function startDrag(e) { if (e.type === 'touchstart') e.preventDefault(); const fab = e.currentTarget; dragTreeType = fab.dataset.treeType; isDragging = true; hasDragged = false; draggedOriginalFab = fab; const touch = e.type === 'touchstart' ? e.touches[0] : e; startX = touch.clientX; startY = touch.clientY; const rect = fab.getBoundingClientRect(); offsetX = startX - rect.left; offsetY = startY - rect.top; dragClone = fab.cloneNode(true); dragClone.id = 'drag-clone'; dragClone.style.left = `${startX - offsetX}px`; dragClone.style.top = `${startY - offsetY}px`; dragClone.style.backgroundColor = window.getComputedStyle(fab).backgroundColor; dragClone.style.color = window.getComputedStyle(fab).color; document.body.appendChild(dragClone); document.body.classList.add('dragging-active'); if (draggedOriginalFab) { draggedOriginalFab.style.visibility = 'hidden'; } if (cancelZone) cancelZone.classList.add('visible'); map.dragging.disable(); if (map.doubleClickZoom) map.doubleClickZoom.disable(); }
+            function dragMove(e) { if (!isDragging || !dragClone) return; if (e.type === 'touchmove') e.preventDefault(); const touch = e.type === 'touchmove' ? e.touches[0] : e; const currentX = touch.clientX; const currentY = touch.clientY; const deltaX = currentX - startX; const deltaY = currentY - startY; if (!hasDragged && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) { hasDragged = true; } dragClone.style.left = `${currentX - offsetX}px`; dragClone.style.top = `${currentY - offsetY}px`; dragClone.style.visibility = 'hidden'; const elementUnderPointer = document.elementFromPoint(currentX, currentY); dragClone.style.visibility = 'visible'; const isOverCancelZone = cancelZone && (cancelZone === elementUnderPointer || cancelZone.contains(elementUnderPointer)); if (cancelZone) cancelZone.classList.toggle('drag-over', isOverCancelZone); mapContainer.classList.toggle('drag-over', mapContainer.contains(elementUnderPointer) && !isOverCancelZone); }
             function endDrag(e) {
-                if (draggedOriginalFab) {
-                    draggedOriginalFab.style.visibility = 'visible';
-                }
-                if (cancelZone) {
-                    cancelZone.classList.remove('visible', 'drag-over');
-                }
-
+                if (draggedOriginalFab) { draggedOriginalFab.style.visibility = 'visible'; }
+                if (cancelZone) { cancelZone.classList.remove('visible', 'drag-over'); }
                 if (!isDragging) return;
 
-                map.dragging.enable();
-                if (map.doubleClickZoom) map.doubleClickZoom.enable();
-                if (dragClone) {
-                    dragClone.remove(); // Remove the clone regardless
-                    dragClone = null;
-                }
-                document.body.classList.remove('dragging-active');
-                mapContainer.classList.remove('drag-over');
+                map.dragging.enable(); if (map.doubleClickZoom) map.doubleClickZoom.enable();
+                if (dragClone) { dragClone.remove(); dragClone = null; }
+                document.body.classList.remove('dragging-active'); mapContainer.classList.remove('drag-over');
 
                 const touch = e.type === 'touchend' ? e.changedTouches[0] : e;
-                const finalX = touch.clientX;
-                const finalY = touch.clientY;
-
-                // No need to hide/show clone here as it's already removed or will be removed
+                const finalX = touch.clientX; const finalY = touch.clientY;
                 const elementUnderPointer = document.elementFromPoint(finalX, finalY);
 
-                let addedTree = false;
+                let formOpened = false;
                 const isOverCancelZone = cancelZone && (cancelZone === elementUnderPointer || cancelZone.contains(elementUnderPointer));
 
                 if (isOverCancelZone && hasDragged) {
                     console.log("Drag cancelled by dropping on cancel zone.");
+                    // If a provisional marker was placed from a *previous* drag that wasn't cancelled this way
+                    // it should ideally be removed here IF the form related to it is also implicitly cancelled.
+                    // However, the current setup is that a new drag clears the old provisional marker, which is simpler.
                 } else if (mapContainer.contains(elementUnderPointer) && hasDragged) {
                     const point = map.containerPointToLayerPoint([finalX, finalY]);
                     const latLng = map.layerPointToLatLng(point);
-                    console.log("Drop Coords (Dragged onto Map):", latLng);
                     if (latLng && dragTreeType) {
+                        // Remove any pre-existing provisional marker (e.g., from a previous uncancelled add attempt)
+                        if (provisionalMarker) {
+                            map.removeLayer(provisionalMarker);
+                            provisionalMarker = null;
+                        }
+                        // Add a new provisional marker at the drop location
+                        provisionalMarker = L.marker([latLng.lat, latLng.lng]).addTo(map);
+                        // Optionally, give it a temporary popup or style
+                        // provisionalMarker.bindPopup("New tree here...").openPopup();
+
                         openAddForm(latLng.lat, latLng.lng, dragTreeType);
-                        addedTree = true;
-                    } else {
-                        console.warn("Could not get LatLng or tree type on map drop.");
-                    }
-                } else if (hasDragged) {
-                    console.log("Dragged but dropped outside map/cancel zone.");
-                } else {
-                    console.log("Click detected, no drag action.");
-                }
+                        formOpened = true;
+                    } else { console.warn("Could not get LatLng or tree type on map drop."); }
+                } else if (hasDragged) { console.log("Dragged but dropped outside map/cancel zone."); }
+                else { console.log("Click detected, no drag action."); }
 
-                if (addedTree) {
-                    addFabContainer.classList.remove('expanded');
-                }
-
-                // Reset drag state regardless of outcome
-                isDragging = false;
-                dragTreeType = null;
-                hasDragged = false;
-                startX = null;
-                startY = null;
-                offsetX = null;
-                offsetY = null;
-                draggedOriginalFab = null;
+                if (formOpened) { addFabContainer.classList.remove('expanded'); }
+                isDragging = false; dragTreeType = null; hasDragged = false; startX = null; startY = null; offsetX = null; offsetY = null; draggedOriginalFab = null;
             }
 
             // Function to attempt manual location fetch
-            function attemptManualLocationFetch() {
-                if (navigator.geolocation) {
-                    showNotification("Attempting to find your location...");
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            const lat = pos.coords.latitude;
-                            const lng = pos.coords.longitude;
-                            lastKnownLocation = [lat, lng];
-                            if (!currentLocationMarker) {
-                                currentLocationMarker = L.marker(lastKnownLocation, { icon: currentLocationIcon }).addTo(map);
-                            } else {
-                                currentLocationMarker.setLatLng(lastKnownLocation);
-                            }
-                            map.setView(lastKnownLocation, 16, { animate: true });
-                            showNotification("Location found and map centered!");
-                        },
-                        (err) => {
-                            console.error("Manual Geo Err: ", err.message);
-                            showNotification(`Could not get location: ${err.message}. Please ensure location services are enabled.`);
-                            // lastKnownLocation remains null here
-                        },
-                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                    );
-                } else {
-                    showNotification("Geolocation is not supported by your browser.");
-                }
-            }
+            function attemptManualLocationFetch() { if (navigator.geolocation) { showNotification("Attempting to find your location..."); navigator.geolocation.getCurrentPosition( (pos) => { const lat = pos.coords.latitude; const lng = pos.coords.longitude; lastKnownLocation = [lat, lng]; if (!currentLocationMarker) { currentLocationMarker = L.marker(lastKnownLocation, { icon: currentLocationIcon }).addTo(map); } else { currentLocationMarker.setLatLng(lastKnownLocation); } map.setView(lastKnownLocation, 16, { animate: true }); showNotification("Location found and map centered!"); }, (err) => { console.error("Manual Geo Err: ", err.message); showNotification(`Could not get location: ${err.message}. Please ensure location services are enabled.`); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } ); } else { showNotification("Geolocation is not supported by your browser."); } }
 
 
             // --- Event Listeners & Initialization Function ---
@@ -763,43 +597,38 @@
                 loadExistingTrees();
                 populateSidebarMenu();
 
-                // Combined Click Listener for Sidebar and FAB closing
-                document.addEventListener('click', (e) => {
-                    if (sidebarMenu && sidebarMenu.classList.contains('open') && !sidebarMenu.contains(e.target) && e.target !== headerMenuBtn && !headerMenuBtn.contains(e.target)) {
-                         closeSidebarMenu();
-                     }
-                     if (addFabContainer && addFabContainer.classList.contains('expanded') && !addFabContainer.contains(e.target)) {
-                         addFabContainer.classList.remove('expanded');
-                     }
-                });
+                document.addEventListener('click', (e) => { if (sidebarMenu && sidebarMenu.classList.contains('open') && !sidebarMenu.contains(e.target) && e.target !== headerMenuBtn && !headerMenuBtn.contains(e.target)) { closeSidebarMenu(); } if (addFabContainer && addFabContainer.classList.contains('expanded') && !addFabContainer.contains(e.target)) { addFabContainer.classList.remove('expanded'); } });
 
-                // Specific Component Listeners
                 headerMenuBtn.addEventListener('click', openSidebarMenu);
                 sidebarCloseBtn.addEventListener('click', closeSidebarMenu);
                 categoryTriggers.forEach(button => { button.addEventListener('click', () => showSidebarView(button.dataset.targetView)); });
                 sidebarBackBtns.forEach(button => { button.addEventListener('click', () => showSidebarView('sidebar-main-view')); });
-                bottomSheetCloseBtn.addEventListener('click', closeFormSheet);
-                cancelFormBtn.addEventListener('click', closeFormSheet);
-                
-                locateFab.addEventListener('click', () => {
-                    if (lastKnownLocation) {
-                        map.setView(lastKnownLocation, 16, { animate: true });
-                    } else {
-                        attemptManualLocationFetch(); // Attempt to get location if not available
+
+                bottomSheetCloseBtn.addEventListener('click', () => {
+                    const isAddingOperation = !editTreeIdInput.value; // Check *before* closeFormSheet clears it
+                    if (isAddingOperation && provisionalMarker) {
+                        map.removeLayer(provisionalMarker);
+                        provisionalMarker = null;
                     }
+                    closeFormSheet();
                 });
-
+                cancelFormBtn.addEventListener('click', () => {
+                    const isAddingOperation = !editTreeIdInput.value; // Check *before* closeFormSheet clears it
+                    if (isAddingOperation && provisionalMarker) {
+                        map.removeLayer(provisionalMarker);
+                        provisionalMarker = null;
+                    }
+                    closeFormSheet();
+                });
+                
+                locateFab.addEventListener('click', () => { if (lastKnownLocation) { map.setView(lastKnownLocation, 16, { animate: true }); } else { attemptManualLocationFetch(); } });
                 addTreeFab.addEventListener('click', (e) => { e.stopPropagation(); addFabContainer.classList.toggle('expanded'); });
-                mapToggleFab.addEventListener('click', toggleMapView); // Map Toggle Listener
+                mapToggleFab.addEventListener('click', toggleMapView);
 
-                // Simulated Drag Listeners
                 subFabs.forEach(fab => { fab.addEventListener('mousedown', startDrag); fab.addEventListener('touchstart', startDrag, { passive: false }); });
-                document.addEventListener('mousemove', dragMove);
-                document.addEventListener('touchmove', dragMove, { passive: false });
-                document.addEventListener('mouseup', endDrag);
-                document.addEventListener('touchend', endDrag);
+                document.addEventListener('mousemove', dragMove); document.addEventListener('touchmove', dragMove, { passive: false });
+                document.addEventListener('mouseup', endDrag); document.addEventListener('touchend', endDrag);
 
-                // Form Submit Listener
                 treeForm.addEventListener('submit', (e) => {
                     e.preventDefault();
                     const editingTreeId = editTreeIdInput.value;
@@ -808,16 +637,7 @@
 
                     if (!type || !species || isNaN(lat) || isNaN(lng)) { console.error("Validation failed"); showNotification("Error: Please fill required fields."); return; }
 
-                    const processImageAndSave = (saveCallback) => {
-                         if (imageFile) {
-                             const reader = new FileReader();
-                             reader.onload = (e) => { newImageDataUrl = e.target.result; saveCallback(); };
-                             reader.onerror = (error) => { console.error("FileReader Error:", error); showNotification("Error reading image."); };
-                             reader.readAsDataURL(imageFile);
-                         } else {
-                             saveCallback();
-                         }
-                    };
+                    const processImageAndSave = (saveCallback) => { if (imageFile) { const reader = new FileReader(); reader.onload = (e) => { newImageDataUrl = e.target.result; saveCallback(); }; reader.onerror = (error) => { console.error("FileReader Error:", error); showNotification("Error reading image."); }; reader.readAsDataURL(imageFile); } else { saveCallback(); } };
 
                     if (editingTreeId) { // Edit Logic
                          const treeIndex = trees.findIndex(t => t.id === editingTreeId);
@@ -825,10 +645,10 @@
                          processImageAndSave(() => {
                              const treeToUpdate = trees[treeIndex];
                              treeToUpdate.species = species; treeToUpdate.notes = notes; treeToUpdate.location.lat = lat; treeToUpdate.location.lng = lng; treeToUpdate.type = type;
-                             if (newImageDataUrl !== null) { treeToUpdate.imageUrl = newImageDataUrl; } else if (!imageFile && treeToUpdate.imageUrl) { /* Keep existing image if no new one is selected */ } else { treeToUpdate.imageUrl = ''; } // Clear if no file and no existing image
+                             if (newImageDataUrl !== null) { treeToUpdate.imageUrl = newImageDataUrl; } else if (!imageFile && treeToUpdate.imageUrl) { /* Keep existing */ } else { treeToUpdate.imageUrl = ''; }
                              try { saveTreesToLocalStorage(); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving updated data."); return; }
                              const marker = markers[editingTreeId];
-                             if (marker) { marker.setLatLng([lat, lng]); marker.setPopupContent(createPopupContent(treeToUpdate)); } // Update marker position too
+                             if (marker) { marker.setLatLng([lat, lng]); marker.setPopupContent(createPopupContent(treeToUpdate)); }
                              populateSidebarMenu(); closeFormSheet(); showNotification(`"${species}" tree updated.`);
                          });
                     } else { // Add Logic
@@ -836,33 +656,36 @@
                              const newTree = { id: Date.now().toString(), type, species, notes, location: { lat, lng }, imageUrl: newImageDataUrl || '', dateAdded: new Date().toISOString(), needsAttention: false };
                              trees.push(newTree);
                              try { saveTreesToLocalStorage(); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving new data."); return; }
-                             addTreeMarker(newTree); populateSidebarMenu(); closeFormSheet(); showNotification(`"${species}" tree added.`);
+                             
+                             if (provisionalMarker) {
+                                 // Promote provisionalMarker to a permanent one
+                                 markers[newTree.id] = provisionalMarker;
+                                 provisionalMarker.on('popupopen', () => attachPopupListeners(newTree.id));
+                                 provisionalMarker.bindPopup(() => createPopupContent(newTree));
+                                 // provisionalMarker.closePopup(); // If it had a temporary popup
+                                 provisionalMarker = null; // It's no longer provisional
+                             } else {
+                                 // Fallback if provisionalMarker was somehow lost (should not happen)
+                                 console.warn("Provisional marker missing on save. Creating new one.");
+                                 addTreeMarker(newTree);
+                             }
+                             populateSidebarMenu(); closeFormSheet(); showNotification(`"${species}" tree added.`);
                          });
                     }
                 });
 
-                // Image Input Listener
                 imageInput.addEventListener('change', (e) => { if (e.target.files.length > 0) { const file = e.target.files[0]; const reader = new FileReader(); reader.onload = (e) => { previewImg.src = e.target.result; imagePreview.classList.remove('hidden'); }; reader.readAsDataURL(file); } else { previewImg.src = '#'; imagePreview.classList.add('hidden'); } });
-
-            } // End of initializeApp
-
-            // --- Start the app ---
+            }
             initializeApp();
-
-        }); // End of DOMContentLoaded listener
+        });
     </script>
     <!-- PWA Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                // Register the service worker, using the correct path for GitHub Pages
                 navigator.serviceWorker.register('/LeafLog/service-worker.js') // Adjust path if needed
-                    .then(registration => {
-                        console.log('Service Worker registered successfully with scope:', registration.scope);
-                    })
-                    .catch(error => {
-                        console.error('Service Worker registration failed:', error);
-                    });
+                    .then(registration => { console.log('Service Worker registered successfully with scope:', registration.scope); })
+                    .catch(error => { console.error('Service Worker registration failed:', error); });
             });
         }
     </script>
