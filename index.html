@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -18,35 +19,72 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <style>
         /* Base styles */
-        body, html {
-            height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             /* Disable Text Selection */
-            -webkit-user-select: none; /* Safari */
-            -moz-user-select: none; /* Firefox */
-            -ms-user-select: none; /* IE10+/Edge */
-            user-select: none; /* Standard */
+            -webkit-user-select: none;
+            /* Safari */
+            -moz-user-select: none;
+            /* Firefox */
+            -ms-user-select: none;
+            /* IE10+/Edge */
+            user-select: none;
+            /* Standard */
         }
-        #map { height: 100vh; width: 100%; z-index: 1; }
-        .header { position: fixed; top: 0; left: 0; right: 0; z-index: 10; height: 50px; }
+
+        #map {
+            height: 100vh;
+            width: 100%;
+            z-index: 1;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            height: 50px;
+        }
 
         /* Disable Focus Outline/Highlight Globally */
         *:focus {
             outline: none !important;
             box-shadow: none !important;
         }
-        button:focus, select:focus, input:focus, textarea:focus {
-             outline: none !important;
-             box-shadow: none !important;
-             /* Override potential Tailwind focus rings */
-             --tw-ring-offset-shadow: none !important;
-             --tw-ring-shadow: none !important;
-             box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000) !important;
+
+        button:focus,
+        select:focus,
+        input:focus,
+        textarea:focus {
+            outline: none !important;
+            box-shadow: none !important;
+            /* Override potential Tailwind focus rings */
+            --tw-ring-offset-shadow: none !important;
+            --tw-ring-shadow: none !important;
+            box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000) !important;
         }
 
         /* Disable Tap Highlight */
-        button, a, input, select, textarea, .fab, .sub-fab, .sidebar-category-trigger, .view-on-map-btn, .leaflet-popup-content button, #map-toggle-fab { /* Added map-toggle-fab */
+        button,
+        a,
+        input,
+        select,
+        textarea,
+        .fab,
+        .sub-fab,
+        .sidebar-category-trigger,
+        .view-on-map-btn,
+        .leaflet-popup-content button,
+        #map-toggle-fab {
+            /* Added map-toggle-fab */
             -webkit-tap-highlight-color: transparent;
-             /* tap-highlight-color: transparent; /* Future-proofing */
+            /* tap-highlight-color: transparent; /* Future-proofing */
         }
 
         /* --- Sidebar Menu --- */
@@ -55,8 +93,10 @@
             top: 0;
             left: 0;
             height: 100vh;
-            width: 300px; /* Adjust width as needed */
-            max-width: 85%; /* Max width on smaller screens */
+            width: 300px;
+            /* Adjust width as needed */
+            max-width: 85%;
+            /* Max width on smaller screens */
             background-color: white;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.15);
             z-index: 1002;
@@ -66,9 +106,11 @@
             flex-direction: column;
             overflow: hidden;
         }
+
         #sidebar-menu.open {
             transform: translateX(0);
         }
+
         .sidebar-header {
             display: flex;
             justify-content: space-between;
@@ -78,131 +120,488 @@
             background-color: #f9fafb;
             flex-shrink: 0;
         }
-         .sidebar-header h2 {
-             font-size: 1.1rem;
-             font-weight: 600;
-             color: #333;
-             margin: 0;
-         }
-         #sidebar-close-btn {
-             background: none; border: none; font-size: 1.4rem; color: #6b7280; cursor: pointer; padding: 5px;
-         }
-         #sidebar-close-btn:hover { color: #6b7280; }
+
+        .sidebar-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+
+        #sidebar-close-btn {
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        #sidebar-close-btn:hover {
+            color: #6b7280;
+        }
 
         .sidebar-content-wrapper {
             overflow-y: auto;
             flex-grow: 1;
         }
+
         .sidebar-view {
             display: none;
         }
+
         .sidebar-view.visible {
             display: block;
         }
-         #sidebar-main-view { padding: 1rem; }
-         .sidebar-section { margin-bottom: 0.5rem; }
-         .sidebar-category-trigger {
-             display: flex; justify-content: space-between; align-items: center; width: 100%;
-             padding: 12px 10px; text-align: left; font-size: 1rem;
-             border: 1px solid #e5e7eb; border-radius: 6px; background-color: white;
-             cursor: pointer; transition: background-color 0.2s;
-         }
-         .sidebar-category-trigger:hover { background-color: white; }
-         .sidebar-category-trigger span:first-child { font-weight: 500; color: #374151; display: flex; align-items: center; }
-         .sidebar-category-trigger .count-badge { background-color: #e0e0e0; color: #555; padding: 0.1rem 0.5rem; border-radius: 10px; font-size: 0.8em; font-weight: bold; }
 
-         .sidebar-list-header {
-             display: flex; align-items: center; padding: 10px 15px; border-bottom: 1px solid #eee; background-color: #f9fafb; position: sticky; top: 0; z-index: 1;
-         }
-         .sidebar-list-header h3 { font-size: 1rem; font-weight: 600; color: #333; margin: 0; flex-grow: 1; text-align: center; }
-         .sidebar-back-btn { background: none; border: none; font-size: 1.2rem; color: #4b5563; cursor: pointer; padding: 5px; min-width: 30px; text-align: left;}
-         .sidebar-list-header span { min-width: 30px; }
-         .sidebar-back-btn:hover { color: #4b5563; }
+        #sidebar-main-view {
+            padding: 1rem;
+        }
 
-        .sidebar-list { list-style: none; padding: 0; margin: 0; }
-         #sidebar-spotted-view .sidebar-list,
-         #sidebar-planted-view .sidebar-list,
-         #sidebar-reminders-view .sidebar-list {
-             padding: 0.5rem 1rem 1rem 1rem;
-         }
+        .sidebar-section {
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-category-trigger {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 12px 10px;
+            text-align: left;
+            font-size: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            background-color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .sidebar-category-trigger:hover {
+            background-color: white;
+        }
+
+        .sidebar-category-trigger span:first-child {
+            font-weight: 500;
+            color: #374151;
+            display: flex;
+            align-items: center;
+        }
+
+        .sidebar-category-trigger .count-badge {
+            background-color: #e0e0e0;
+            color: #555;
+            padding: 0.1rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .sidebar-list-header {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+            background-color: #f9fafb;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .sidebar-list-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+            flex-grow: 1;
+            text-align: center;
+        }
+
+        .sidebar-back-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: #4b5563;
+            cursor: pointer;
+            padding: 5px;
+            min-width: 30px;
+            text-align: left;
+        }
+
+        .sidebar-list-header span {
+            min-width: 30px;
+        }
+
+        .sidebar-back-btn:hover {
+            color: #4b5563;
+        }
+
+        .sidebar-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #sidebar-spotted-view .sidebar-list,
+        #sidebar-planted-view .sidebar-list,
+        #sidebar-reminders-view .sidebar-list {
+            padding: 0.5rem 1rem 1rem 1rem;
+        }
 
 
         /* FAB General Styles */
-        .fab { background-color: #16a34a; color: white; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); cursor: pointer; transition: all 0.3s ease; border: none; }
-        .fab:hover { background-color: #16a34a; }
+        .fab {
+            background-color: #16a34a;
+            color: white;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .fab:hover {
+            background-color: #16a34a;
+        }
+
         .fab:active {
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             transform: none;
         }
-        .fab i { font-size: 24px; transition: transform 0.3s ease; }
+
+        .fab i {
+            font-size: 24px;
+            transition: transform 0.3s ease;
+        }
 
         /* Secondary FAB Style (used for Locate and Map Toggle) */
-        .fab-secondary { background-color: #ffffff; color: #374151; width: 48px; height: 48px; }
-        .fab-secondary:hover { background-color: #ffffff; }
-        .fab-secondary i { font-size: 20px; }
+        .fab-secondary {
+            background-color: #ffffff;
+            color: #374151;
+            width: 48px;
+            height: 48px;
+        }
+
+        .fab-secondary:hover {
+            background-color: #ffffff;
+        }
+
+        .fab-secondary i {
+            font-size: 20px;
+        }
 
         /* Locate FAB Container */
-        .locate-fab-container { position: fixed; bottom: 60px; right: 15px; z-index: 1000; }
+        .locate-fab-container {
+            position: fixed;
+            bottom: 60px;
+            right: 15px;
+            z-index: 1000;
+        }
 
         /* Map Toggle FAB Container */
-        .map-toggle-container { position: fixed; top: 65px; right: 15px; z-index: 1000; } /* Adjusted top */
-        #map-toggle-fab i { font-size: 18px; } /* Slightly smaller icon */
+        .map-toggle-container {
+            position: fixed;
+            top: 65px;
+            right: 15px;
+            z-index: 1000;
+        }
+
+        /* Adjusted top */
+        #map-toggle-fab i {
+            font-size: 18px;
+        }
+
+        /* Slightly smaller icon */
 
         /* Add FAB Container & Expansion */
-        #add-fab-container { position: fixed; bottom: 120px; right: 15px; z-index: 1000; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-        #add-tree-fab { position: relative; z-index: 1001; }
-        #add-fab-container.expanded #add-tree-fab i { transform: rotate(45deg); }
+        #add-fab-container {
+            position: fixed;
+            bottom: 120px;
+            right: 15px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #add-tree-fab {
+            position: relative;
+            z-index: 1001;
+        }
+
+        #add-fab-container.expanded #add-tree-fab i {
+            transform: rotate(45deg);
+        }
 
         /* Sub FABs (Spotted/Planted) */
-        .sub-fab { width: 45px; height: 45px; font-size: 0.8em; font-weight: 600; position: absolute; bottom: 5px; right: 5px; z-index: 1000; opacity: 0; transform: scale(0.5) translateY(10px); transition: opacity 0.2s ease-out, transform 0.2s ease-out, visibility 0s linear; cursor: grab; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2px; text-align: center; line-height: 1.1; border-radius: 50%; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
-        .sub-fab:active { cursor: grabbing; }
-        #add-fab-container.expanded .sub-fab { position: relative; bottom: auto; right: auto; opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
-        #sub-fab-spotted { background-color: #fbbf24; color: #422006; }
-        #sub-fab-planted { background-color: #3b82f6; color: white; }
-        #sub-fab-spotted:hover { background-color: #fbbf24; }
-        #sub-fab-planted:hover { background-color: #3b82f6; }
+        .sub-fab {
+            width: 45px;
+            height: 45px;
+            font-size: 0.8em;
+            font-weight: 600;
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            z-index: 1000;
+            opacity: 0;
+            transform: scale(0.5) translateY(10px);
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out, visibility 0s linear;
+            cursor: grab;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2px;
+            text-align: center;
+            line-height: 1.1;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .sub-fab:active {
+            cursor: grabbing;
+        }
+
+        #add-fab-container.expanded .sub-fab {
+            position: relative;
+            bottom: auto;
+            right: auto;
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            pointer-events: auto;
+        }
+
+        #sub-fab-spotted {
+            background-color: #fbbf24;
+            color: #422006;
+        }
+
+        #sub-fab-planted {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        #sub-fab-spotted:hover {
+            background-color: #fbbf24;
+        }
+
+        #sub-fab-planted:hover {
+            background-color: #3b82f6;
+        }
 
         /* Drag Simulation Styles */
-        #drag-clone { position: fixed; z-index: 1010; pointer-events: none; opacity: 0.75; width: 45px; height: 45px; font-size: 0.8em; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2px; text-align: center; line-height: 1.1; border-radius: 50%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); cursor: grabbing; }
-        body.dragging-active { cursor: grabbing !important; user-select: none; }
-        #map.drag-over { outline: 2px dashed #16a34a; outline-offset: -2px; }
+        #drag-clone {
+            position: fixed;
+            z-index: 1010;
+            pointer-events: none;
+            opacity: 0.75;
+            width: 45px;
+            height: 45px;
+            font-size: 0.8em;
+            font-weight: 600;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2px;
+            text-align: center;
+            line-height: 1.1;
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            cursor: grabbing;
+        }
+
+        body.dragging-active {
+            cursor: grabbing !important;
+            user-select: none;
+        }
+
+        #map.drag-over {
+            outline: 2px dashed #16a34a;
+            outline-offset: -2px;
+        }
 
         /* Bottom Sheet (FOR FORM ONLY) */
-        #bottom-sheet { position: fixed; bottom: 0; left: 0; right: 0; background-color: white; border-top-left-radius: 16px; border-top-right-radius: 16px; box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15); z-index: 1003; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(100%); max-height: 90vh; display: flex; flex-direction: column; }
-        #bottom-sheet.active { transform: translateY(0); }
-        .bottom-sheet-content { padding: 15px; overflow-y: auto; flex-grow: 1; }
-        .bottom-sheet-view { display: none; } .bottom-sheet-view.visible { display: block; }
-        .bottom-sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eee; }
-        .bottom-sheet-header h3 { font-size: 1.2rem; font-weight: 600; color: #333; margin: 0; flex-grow: 1; text-align: center; }
-        .bottom-sheet-header span { min-width: 30px; }
-        .bottom-sheet-close-btn { background: none; border: none; font-size: 1.3rem; color: #6b7280; cursor: pointer; padding: 5px; min-width: 30px; text-align: right; }
-        .bottom-sheet-close-btn:hover { color: #6b7280; }
-        #add-form-view { padding-top: 0; } #add-form-view form { margin-top: 0; }
+        #bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: white;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1003;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(100%);
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #bottom-sheet.active {
+            transform: translateY(0);
+        }
+
+        .bottom-sheet-content {
+            padding: 15px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .bottom-sheet-view {
+            display: none;
+        }
+
+        .bottom-sheet-view.visible {
+            display: block;
+        }
+
+        .bottom-sheet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .bottom-sheet-header h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+            flex-grow: 1;
+            text-align: center;
+        }
+
+        .bottom-sheet-header span {
+            min-width: 30px;
+        }
+
+        .bottom-sheet-close-btn {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 5px;
+            min-width: 30px;
+            text-align: right;
+        }
+
+        .bottom-sheet-close-btn:hover {
+            color: #6b7280;
+        }
+
+        #add-form-view {
+            padding-top: 0;
+        }
+
+        #add-form-view form {
+            margin-top: 0;
+        }
 
         /* List Item Styles (used in sidebar) */
-        .list-item { padding: 10px 5px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
-        .list-item:last-child { border-bottom: none; }
-        .list-item .view-on-map-btn { background: none; border: none; color: #3498db; cursor: pointer; font-size: 0.9em; margin-left: 8px; padding: 0.25rem; white-space: nowrap; }
-        .list-item .view-on-map-btn:hover { text-decoration: none; color: #3498db; }
+        .list-item {
+            padding: 10px 5px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .list-item .view-on-map-btn {
+            background: none;
+            border: none;
+            color: #3498db;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-left: 8px;
+            padding: 0.25rem;
+            white-space: nowrap;
+        }
+
+        .list-item .view-on-map-btn:hover {
+            text-decoration: none;
+            color: #3498db;
+        }
 
         /* Popup Styles */
-        .popup-image { max-width: 100%; max-height: 150px; object-fit: cover; border-radius: 4px; margin-top: 8px; }
-        .leaflet-popup-content { min-width: 220px; padding-bottom: 8px !important; }
-        .popup-edit-btn:hover { color: #3b82f6 !important; text-decoration: none !important; }
-        .popup-delete-btn:hover { color: #dc2626 !important; text-decoration: none !important; }
-        .toggle-reminder-btn { transition: background-color 0.2s; }
+        .popup-image {
+            max-width: 100%;
+            max-height: 150px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
+        .leaflet-popup-content {
+            min-width: 220px;
+            padding-bottom: 8px !important;
+        }
+
+        .popup-edit-btn:hover {
+            color: #3b82f6 !important;
+            text-decoration: none !important;
+        }
+
+        .popup-delete-btn:hover {
+            color: #dc2626 !important;
+            text-decoration: none !important;
+        }
+
+        .toggle-reminder-btn {
+            transition: background-color 0.2s;
+        }
+
         /* .toggle-reminder-btn[data-tree-id]:hover {} */
-        .toggle-reminder-btn.bg-yellow-500:hover { background-color: #f59e0b !important; }
-        .toggle-reminder-btn.bg-blue-500:hover { background-color: #3b82f6 !important; }
-        .bg-yellow-500.hover\:bg-yellow-600:hover { background-color: #f59e0b !important; }
-        .bg-blue-500.hover\:bg-blue-600:hover { background-color: #3b82f6 !important; }
-        .text-blue-600.hover\:text-blue-800:hover { color: #3b82f6 !important; }
-        .text-red-600.hover\:text-red-800:hover { color: #dc2626 !important; }
+        .toggle-reminder-btn.bg-yellow-500:hover {
+            background-color: #f59e0b !important;
+        }
+
+        .toggle-reminder-btn.bg-blue-500:hover {
+            background-color: #3b82f6 !important;
+        }
+
+        .bg-yellow-500.hover\:bg-yellow-600:hover {
+            background-color: #f59e0b !important;
+        }
+
+        .bg-blue-500.hover\:bg-blue-600:hover {
+            background-color: #3b82f6 !important;
+        }
+
+        .text-blue-600.hover\:text-blue-800:hover {
+            color: #3b82f6 !important;
+        }
+
+        .text-red-600.hover\:text-red-800:hover {
+            color: #dc2626 !important;
+        }
 
         /* Current Location Icon */
-        .current-location-div-icon { background: none; border: none; }
+        .current-location-div-icon {
+            background: none;
+            border: none;
+        }
+
         /* Hide Leaflet Attribution */
-        .leaflet-control-attribution { display: none !important; }
+        .leaflet-control-attribution {
+            display: none !important;
+        }
+
         /* Cancel Zone Styles */
         #cancel-zone {
             position: fixed;
@@ -226,24 +625,65 @@
             opacity: 0;
             pointer-events: none;
         }
+
         #cancel-zone.visible {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
             pointer-events: auto;
         }
+
         #cancel-zone.drag-over {
             background-color: rgba(75, 85, 99, 0.9);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 3px rgba(0, 0, 0, 0.1);
         }
+
         #cancel-zone i {
             font-size: 1.1rem;
             margin-right: 6px;
         }
 
         /* Print Styles */
-        @media print { body, html { height: auto; overflow: visible; user-select: auto; } #map { height: 95vh !important; page-break-inside: avoid; width: 100% !important; } .no-print { display: none !important; } .header { position: relative !important; } #bottom-sheet, .locate-fab-container, #add-fab-container, #sidebar-menu, #cancel-zone, .map-toggle-container { display: none !important; } .current-location-div-icon { display: none !important; } } /* Added map-toggle-container to no-print */
+        @media print {
+
+            body,
+            html {
+                height: auto;
+                overflow: visible;
+                user-select: auto;
+            }
+
+            #map {
+                height: 95vh !important;
+                page-break-inside: avoid;
+                width: 100% !important;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .header {
+                position: relative !important;
+            }
+
+            #bottom-sheet,
+            .locate-fab-container,
+            #add-fab-container,
+            #sidebar-menu,
+            #cancel-zone,
+            .map-toggle-container {
+                display: none !important;
+            }
+
+            .current-location-div-icon {
+                display: none !important;
+            }
+        }
+
+        /* Added map-toggle-container to no-print */
     </style>
 </head>
+
 <body class="bg-gray-100">
     <!-- Header -->
     <header class="bg-green-700 text-white p-3 shadow-md header no-print">
@@ -256,136 +696,152 @@
     </header>
 
     <!-- Sidebar Menu -->
-     <div id="sidebar-menu" class="no-print">
-         <div class="sidebar-header">
-             <h2 id="sidebar-title">Menu</h2>
-             <button id="sidebar-close-btn" aria-label="Close menu">
-                 <i class="fas fa-times"></i>
-             </button>
-         </div>
-         <div class="sidebar-content-wrapper flex-grow overflow-y-auto">
-             <!-- Main Menu View -->
-             <div id="sidebar-main-view" class="sidebar-view visible p-4">
-                 <div class="sidebar-section">
-                     <button class="sidebar-category-trigger" data-target-view="sidebar-spotted-view">
-                         <span><i class="fas fa-binoculars mr-2 text-yellow-500"></i>Spotted Trees</span>
-                         <span id="sidebar-spotted-count" class="count-badge">0</span>
-                     </button>
-                 </div>
-                 <div class="sidebar-section">
-                     <button class="sidebar-category-trigger" data-target-view="sidebar-planted-view">
-                         <span><i class="fas fa-seedling mr-2 text-blue-500"></i>Planted Trees</span>
-                         <span id="sidebar-planted-count" class="count-badge">0</span>
-                     </button>
-                 </div>
-                 <div class="sidebar-section">
-                      <button class="sidebar-category-trigger" data-target-view="sidebar-reminders-view">
-                         <span><i class="fas fa-bell mr-2 text-orange-500"></i>Reminders</span>
-                         <span id="sidebar-reminder-count" class="count-badge">0</span>
-                     </button>
-                 </div>
-             </div>
-             <!-- Spotted List View -->
-             <div id="sidebar-spotted-view" class="sidebar-view hidden">
-                 <div class="sidebar-list-header">
-                     <button class="sidebar-back-btn" aria-label="Back to main menu"><i class="fas fa-arrow-left"></i></button>
-                     <h3>Spotted Trees</h3>
-                     <span></span>
-                 </div>
-                 <ul id="sidebar-spotted-list" class="sidebar-list p-4"></ul>
-             </div>
-             <!-- Planted List View -->
-             <div id="sidebar-planted-view" class="sidebar-view hidden">
-                  <div class="sidebar-list-header">
-                     <button class="sidebar-back-btn" aria-label="Back to main menu"><i class="fas fa-arrow-left"></i></button>
-                     <h3>Planted Trees</h3>
-                     <span></span>
-                 </div>
-                 <ul id="sidebar-planted-list" class="sidebar-list p-4"></ul>
-             </div>
-             <!-- Reminders List View -->
-             <div id="sidebar-reminders-view" class="sidebar-view hidden">
-                  <div class="sidebar-list-header">
-                     <button class="sidebar-back-btn" aria-label="Back to main menu"><i class="fas fa-arrow-left"></i></button>
-                     <h3>Reminders</h3>
-                     <span></span>
-                 </div>
-                 <ul id="sidebar-reminders-list" class="sidebar-list p-4"></ul>
-             </div>
-         </div>
-     </div>
+    <div id="sidebar-menu" class="no-print">
+        <div class="sidebar-header">
+            <h2 id="sidebar-title">Menu</h2>
+            <button id="sidebar-close-btn" aria-label="Close menu">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="sidebar-content-wrapper flex-grow overflow-y-auto">
+            <!-- Main Menu View -->
+            <div id="sidebar-main-view" class="sidebar-view visible p-4">
+                <div class="sidebar-section">
+                    <button class="sidebar-category-trigger" data-target-view="sidebar-spotted-view">
+                        <span><i class="fas fa-binoculars mr-2 text-yellow-500"></i>Spotted Trees</span>
+                        <span id="sidebar-spotted-count" class="count-badge">0</span>
+                    </button>
+                </div>
+                <div class="sidebar-section">
+                    <button class="sidebar-category-trigger" data-target-view="sidebar-planted-view">
+                        <span><i class="fas fa-seedling mr-2 text-blue-500"></i>Planted Trees</span>
+                        <span id="sidebar-planted-count" class="count-badge">0</span>
+                    </button>
+                </div>
+                <div class="sidebar-section">
+                    <button class="sidebar-category-trigger" data-target-view="sidebar-reminders-view">
+                        <span><i class="fas fa-bell mr-2 text-orange-500"></i>Reminders</span>
+                        <span id="sidebar-reminder-count" class="count-badge">0</span>
+                    </button>
+                </div>
+            </div>
+            <!-- Spotted List View -->
+            <div id="sidebar-spotted-view" class="sidebar-view hidden">
+                <div class="sidebar-list-header">
+                    <button class="sidebar-back-btn" aria-label="Back to main menu"><i
+                            class="fas fa-arrow-left"></i></button>
+                    <h3>Spotted Trees</h3>
+                    <span></span>
+                </div>
+                <ul id="sidebar-spotted-list" class="sidebar-list p-4"></ul>
+            </div>
+            <!-- Planted List View -->
+            <div id="sidebar-planted-view" class="sidebar-view hidden">
+                <div class="sidebar-list-header">
+                    <button class="sidebar-back-btn" aria-label="Back to main menu"><i
+                            class="fas fa-arrow-left"></i></button>
+                    <h3>Planted Trees</h3>
+                    <span></span>
+                </div>
+                <ul id="sidebar-planted-list" class="sidebar-list p-4"></ul>
+            </div>
+            <!-- Reminders List View -->
+            <div id="sidebar-reminders-view" class="sidebar-view hidden">
+                <div class="sidebar-list-header">
+                    <button class="sidebar-back-btn" aria-label="Back to main menu"><i
+                            class="fas fa-arrow-left"></i></button>
+                    <h3>Reminders</h3>
+                    <span></span>
+                </div>
+                <ul id="sidebar-reminders-list" class="sidebar-list p-4"></ul>
+            </div>
+        </div>
+    </div>
 
     <!-- Map -->
     <div id="map"></div>
 
     <!-- Map View Toggle FAB -->
     <div class="map-toggle-container no-print">
-        <button id="map-toggle-fab" class="fab fab-secondary" aria-label="Switch to Street View"> <!-- Changed aria-label -->
+        <button id="map-toggle-fab" class="fab fab-secondary" aria-label="Switch to Street View">
+            <!-- Changed aria-label -->
             <i class="fas fa-map"></i> <!-- Changed initial icon -->
         </button>
     </div>
 
     <!-- Locate FAB -->
     <div class="locate-fab-container no-print">
-         <button id="locate-fab" class="fab fab-secondary" aria-label="Center on my location">
-             <i class="fas fa-location-arrow"></i>
-         </button>
+        <button id="locate-fab" class="fab fab-secondary" aria-label="Center on my location">
+            <i class="fas fa-location-arrow"></i>
+        </button>
     </div>
 
     <!-- Add FAB Container -->
     <div id="add-fab-container" class="no-print">
-         <button id="sub-fab-spotted" class="fab sub-fab" data-tree-type="Spotted"> <i class="fas fa-binoculars"></i>Spot </button>
-         <button id="sub-fab-planted" class="fab sub-fab" data-tree-type="Planted"> <i class="fas fa-seedling"></i>Plant </button>
-         <button id="add-tree-fab" class="fab" aria-label="Add new tree"> <i class="fas fa-plus"></i> </button>
+        <button id="sub-fab-spotted" class="fab sub-fab" data-tree-type="Spotted"> <i class="fas fa-binoculars"></i>Spot
+        </button>
+        <button id="sub-fab-planted" class="fab sub-fab" data-tree-type="Planted"> <i class="fas fa-seedling"></i>Plant
+        </button>
+        <button id="add-tree-fab" class="fab" aria-label="Add new tree"> <i class="fas fa-plus"></i> </button>
     </div>
 
     <!-- Bottom Sheet (FOR FORM ONLY) -->
     <div id="bottom-sheet" class="no-print">
-         <div class="bottom-sheet-content">
+        <div class="bottom-sheet-content">
             <!-- Add/Edit Form View -->
             <div id="add-form-view" class="bottom-sheet-view visible">
-                 <div class="bottom-sheet-header">
-                   <span></span>
-                   <h3 id="form-title"></h3>
-                   <button class="bottom-sheet-close-btn" aria-label="Cancel add/edit tree"><i class="fas fa-times"></i></button>
-                 </div>
-                 <form id="tree-form" class="space-y-4">
+                <div class="bottom-sheet-header">
+                    <span></span>
+                    <h3 id="form-title"></h3>
+                    <button class="bottom-sheet-close-btn" aria-label="Cancel add/edit tree"><i
+                            class="fas fa-times"></i></button>
+                </div>
+                <form id="tree-form" class="space-y-4">
                     <input type="hidden" id="edit-tree-id" name="editTreeId">
                     <input type="hidden" id="lat" name="lat">
                     <input type="hidden" id="lng" name="lng">
                     <div>
-                       <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type *</label>
-                       <select id="type" name="type" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100" disabled>
-                           <option value="Spotted">Spotted</option>
-                           <option value="Planted">Planted</option>
-                       </select>
+                        <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+                        <select id="type" name="type" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100" disabled>
+                            <option value="Spotted">Spotted</option>
+                            <option value="Planted">Planted</option>
+                        </select>
                     </div>
                     <div>
-                       <label for="species" class="block text-sm font-medium text-gray-700 mb-1">Species *</label>
-                       <input type="text" id="species" name="species" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" placeholder="e.g., Oak, Maple">
+                        <label for="species" class="block text-sm font-medium text-gray-700 mb-1">Species *</label>
+                        <input type="text" id="species" name="species" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                            placeholder="e.g., Oak, Maple">
                     </div>
                     <div>
-                       <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                       <textarea id="notes" name="notes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" placeholder="Observations..."></textarea>
+                        <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea id="notes" name="notes" rows="2"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                            placeholder="Observations..."></textarea>
                     </div>
                     <div>
-                       <label for="image" class="block text-sm font-medium text-gray-700 mb-1">Photo</label>
-                       <input type="file" id="image" name="image" accept="image/*" class="w-full px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm">
-                       <div id="image-preview" class="mt-2 hidden">
-                           <img id="preview-img" src="#" alt="Preview" class="h-32 object-cover rounded-md">
-                       </div>
+                        <label for="image" class="block text-sm font-medium text-gray-700 mb-1">Photo</label>
+                        <input type="file" id="image" name="image" accept="image/*"
+                            class="w-full px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm">
+                        <div id="image-preview" class="mt-2 hidden">
+                            <img id="preview-img" src="#" alt="Preview" class="h-32 object-cover rounded-md">
+                        </div>
                     </div>
                     <div class="flex justify-end space-x-3 pt-2">
-                       <button type="button" id="cancel-form-btn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md">Cancel</button>
-                       <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md">Save Tree</button>
+                        <button type="button" id="cancel-form-btn"
+                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md">Save Tree</button>
                     </div>
-                 </form>
+                </form>
             </div>
         </div>
     </div> <!-- End of Bottom Sheet -->
 
     <!-- Notification -->
-    <div id="notification" class="fixed top-16 right-0 bg-green-500 text-white p-3 rounded-md shadow-lg transform transition-transform duration-300 translate-x-full no-print" style="z-index: 1002;">
+    <div id="notification"
+        class="fixed top-16 right-0 bg-green-500 text-white p-3 rounded-md shadow-lg transform transition-transform duration-300 translate-x-full no-print"
+        style="z-index: 1002;">
         <p id="notification-text" class="text-sm"></p>
     </div>
 
@@ -399,7 +855,7 @@
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
     <!-- Application Script -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
 
             // --- Map Initialization & Geolocation ---
             const defaultCoords = [42.5048, 27.4626];
@@ -408,13 +864,13 @@
 
             // --- Define Map Layers ---
             const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                 attribution: '© OSM',
-                 maxZoom: 19
-             });
+                attribution: '© OSM',
+                maxZoom: 19
+            });
             const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
                 maxZoom: 19
-             });
+            });
 
             // --- LocalStorage Keys ---
             const treesStorageKey = 'leaflog_trees';
@@ -448,12 +904,21 @@
                 iconUrl: 'img/my-location-marker.png', // PATH TO YOUR CUSTOM ICON
                 iconSize: [32, 32], // Desired size of the icon [width, height] in pixels. Adjust as needed.
                 iconAnchor: [16, 32], // Point of the icon which will correspond to marker's location.
-                                      // For a pin, this is often [half_width, full_height] (bottom-center). Adjust as needed.
+                // For a pin, this is often [half_width, full_height] (bottom-center). Adjust as needed.
                 popupAnchor: [0, -32] // Point from which the popup should open relative to the iconAnchor.
-                                       // [0, -height] usually works well to position popup above the pin. Adjust as needed.
+                // [0, -height] usually works well to position popup above the pin. Adjust as needed.
             });
             let currentLocationMarker = null; let lastKnownLocation = null;
-            if (navigator.geolocation) { navigator.geolocation.watchPosition( (pos) => { const lat=pos.coords.latitude, lng=pos.coords.longitude; lastKnownLocation=[lat,lng]; if(!currentLocationMarker){ currentLocationMarker=L.marker(lastKnownLocation, {icon: currentLocationIcon}).addTo(map); } else { currentLocationMarker.setLatLng(lastKnownLocation); } }, (err) => { console.error("Geo Err: ", err.message); if(currentLocationMarker){map.removeLayer(currentLocationMarker); currentLocationMarker=null;} lastKnownLocation=null; showNotification(`Location error: ${err.message}`); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } ); } else { console.log("Geo not supported."); }
+            if (navigator.geolocation) { navigator.geolocation.watchPosition((pos) => { const lat = pos.coords.latitude, lng = pos.coords.longitude; lastKnownLocation = [lat, lng]; if (!currentLocationMarker) { currentLocationMarker = L.marker(lastKnownLocation, { icon: currentLocationIcon }).addTo(map); } else { currentLocationMarker.setLatLng(lastKnownLocation); } }, (err) => { console.error("Geo Err: ", err.message); if (currentLocationMarker) { map.removeLayer(currentLocationMarker); currentLocationMarker = null; } lastKnownLocation = null; showNotification(`Location error: ${err.message}`); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }); } else { console.log("Geo not supported."); }
+
+            // --- Custom Tree Marker Icon ---
+            // ** IMPORTANT: Replace 'img/custom-tree-marker.png' with the actual path to your tree marker icon. **
+            const customTreeIcon = L.icon({
+                iconUrl: 'img/custom-tree-marker.png', // PATH TO YOUR CUSTOM TREE MARKER ICON
+                iconSize: [30, 42],    // Example: [width, height] in pixels. Adjust as needed.
+                iconAnchor: [15, 42],  // Point of the icon which will correspond to marker's location (bottom-center for a pin).
+                popupAnchor: [0, -42]  // Point from which the popup should open relative to the iconAnchor.
+            });
 
             // --- DOM References ---
             const sidebarMenu = document.getElementById('sidebar-menu');
@@ -498,7 +963,7 @@
             // --- State Variables ---
             let trees = JSON.parse(localStorage.getItem(treesStorageKey) || '[]');
             let markers = {};
-            let provisionalMarker = null; 
+            let provisionalMarker = null;
             let previousMapView = null; // To store map state before panning for form
             let currentSidebarView = 'sidebar-main-view';
             let isDragging = false; let dragClone = null; let dragTreeType = null; let startX, startY, offsetX, offsetY;
@@ -521,7 +986,7 @@
             function openFormSheet() { if (bottomSheet) bottomSheet.classList.add('active'); }
             function closeFormSheet() {
                 if (bottomSheet) bottomSheet.classList.remove('active');
-                editTreeIdInput.value = ''; 
+                editTreeIdInput.value = '';
                 treeForm.reset();
                 imagePreview.classList.add('hidden');
                 previewImg.src = '#';
@@ -529,7 +994,7 @@
             }
 
             function openAddForm(lat, lng, treeType) {
-                editTreeIdInput.value = ''; 
+                editTreeIdInput.value = '';
                 addFormTitle.textContent = 'Add New Tree';
                 latInput.value = lat;
                 lngInput.value = lng;
@@ -539,28 +1004,28 @@
                 imageInput.value = null;
                 imagePreview.classList.add('hidden');
                 previewImg.src = '#';
-                
+
                 if (map) {
                     previousMapView = {
                         center: map.getCenter(),
                         zoom: map.getZoom()
                     };
                 }
-                
-                openFormSheet(); 
+
+                openFormSheet();
 
                 if (provisionalMarker && map) {
-                    const headerHeight = 50; 
+                    const headerHeight = 50;
                     const desiredMarkerOffsetFromHeader = 70;
                     const targetScreenY = headerHeight + desiredMarkerOffsetFromHeader;
-                    const targetScreenX = map.getSize().x / 2; 
+                    const targetScreenX = map.getSize().x / 2;
 
                     const targetPoint = L.point(targetScreenX, targetScreenY);
                     const currentMarkerPoint = map.latLngToContainerPoint(provisionalMarker.getLatLng());
 
                     const panByX = currentMarkerPoint.x - targetPoint.x;
                     const panByY = currentMarkerPoint.y - targetPoint.y;
-                    
+
                     map.panBy([panByX, panByY], { animate: true, duration: 0.3 });
                 }
             }
@@ -568,7 +1033,7 @@
                 const tree = trees.find(t => t.id === treeId);
                 if (!tree) { console.error("Tree not found for editing:", treeId); return; }
                 map.closePopup();
-                editTreeIdInput.value = treeId; 
+                editTreeIdInput.value = treeId;
                 addFormTitle.textContent = 'Edit Tree';
                 latInput.value = tree.location.lat;
                 lngInput.value = tree.location.lng;
@@ -577,20 +1042,20 @@
                 notesInput.value = tree.notes || '';
                 imageInput.value = null;
                 if (tree.imageUrl) { previewImg.src = tree.imageUrl; imagePreview.classList.remove('hidden'); } else { imagePreview.classList.add('hidden'); previewImg.src = '#'; }
-                openFormSheet(); 
+                openFormSheet();
             }
 
             function saveTreesToLocalStorage() { localStorage.setItem(treesStorageKey, JSON.stringify(trees)); }
-            function addTreeMarker(tree) { const marker = L.marker([tree.location.lat, tree.location.lng]).addTo(map); markers[tree.id] = marker; marker.on('popupopen', () => attachPopupListeners(tree.id)); marker.bindPopup(() => createPopupContent(tree)); }
+            function addTreeMarker(tree) { const marker = L.marker([tree.location.lat, tree.location.lng], { icon: customTreeIcon }).addTo(map); markers[tree.id] = marker; marker.on('popupopen', () => attachPopupListeners(tree.id)); marker.bindPopup(() => createPopupContent(tree)); }
             function createPopupContent(tree) { const reminderButtonText = tree.needsAttention ? 'Remove Reminder' : 'Add Reminder'; const reminderButtonClass = tree.needsAttention ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-blue-500 hover:bg-blue-600'; let c = `<div class="popup-content"><h3 class="text-lg font-semibold">${tree.species}</h3><p class="text-sm text-gray-600"><strong>Type:</strong> ${tree.type}</p>`; if (tree.notes) c += `<p class="text-sm mt-1"><strong>Notes:</strong> ${tree.notes}</p>`; if (tree.imageUrl) c += `<img src="${tree.imageUrl}" alt="${tree.species}" class="popup-image mt-2">`; c += `<button class="toggle-reminder-btn text-xs text-white px-2 py-1 rounded mt-3 ${reminderButtonClass}" data-tree-id="${tree.id}"><i class="fas ${tree.needsAttention ? 'fa-bell-slash' : 'fa-bell'} mr-1"></i>${reminderButtonText}</button>`; c += `<div class="mt-3 pt-2 border-t border-gray-200 flex justify-end space-x-2"><button class="popup-edit-btn text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded" data-tree-id="${tree.id}" aria-label="Edit tree"><i class="fas fa-edit mr-1"></i>Edit</button><button class="popup-delete-btn text-xs text-red-600 hover:text-red-800 px-2 py-1 rounded" data-tree-id="${tree.id}" aria-label="Delete tree"><i class="fas fa-trash-alt mr-1"></i>Delete</button></div>`; c += `</div>`; return c; }
             function attachPopupListeners(treeId) { const popupNode = document.querySelector(`.leaflet-popup-content`); if (!popupNode) { console.error("Cannot find popup content node."); return; } const reminderBtn = popupNode.querySelector(`.toggle-reminder-btn[data-tree-id="${treeId}"]`); if (reminderBtn) { reminderBtn.replaceWith(reminderBtn.cloneNode(true)); popupNode.querySelector(`.toggle-reminder-btn[data-tree-id="${treeId}"]`).addEventListener('click', handleReminderToggle); } const editBtn = popupNode.querySelector(`.popup-edit-btn[data-tree-id="${treeId}"]`); if (editBtn) { editBtn.replaceWith(editBtn.cloneNode(true)); popupNode.querySelector(`.popup-edit-btn[data-tree-id="${treeId}"]`).addEventListener('click', handleEditTree); } const deleteBtn = popupNode.querySelector(`.popup-delete-btn[data-tree-id="${treeId}"]`); if (deleteBtn) { deleteBtn.replaceWith(deleteBtn.cloneNode(true)); popupNode.querySelector(`.popup-delete-btn[data-tree-id="${treeId}"]`).addEventListener('click', handleDeleteTree); } }
-            function handleReminderToggle(event) { const b=event.target.closest('button'); const tId=b.getAttribute('data-tree-id'); const tIdx=trees.findIndex(t=>t.id===tId); if(tIdx!==-1){trees[tIdx].needsAttention=!trees[tIdx].needsAttention; saveTreesToLocalStorage(); const m=markers[tId]; if(m&&m.isPopupOpen()){m.setPopupContent(createPopupContent(trees[tIdx])); attachPopupListeners(tId); } populateSidebarMenu(); showNotification(trees[tIdx].needsAttention?'Reminder added!':'Reminder removed.');} }
+            function handleReminderToggle(event) { const b = event.target.closest('button'); const tId = b.getAttribute('data-tree-id'); const tIdx = trees.findIndex(t => t.id === tId); if (tIdx !== -1) { trees[tIdx].needsAttention = !trees[tIdx].needsAttention; saveTreesToLocalStorage(); const m = markers[tId]; if (m && m.isPopupOpen()) { m.setPopupContent(createPopupContent(trees[tIdx])); attachPopupListeners(tId); } populateSidebarMenu(); showNotification(trees[tIdx].needsAttention ? 'Reminder added!' : 'Reminder removed.'); } }
             function handleEditTree(event) { const button = event.target.closest('button'); const treeId = button.dataset.treeId; openEditForm(treeId); }
             function handleDeleteTree(event) { const button = event.target.closest('button'); const treeId = button.dataset.treeId; const treeIndex = trees.findIndex(t => t.id === treeId); if (treeIndex === -1) return; const treeSpecies = trees[treeIndex].species; if (!window.confirm(`Delete ${treeSpecies}?`)) return; map.closePopup(); const marker = markers[treeId]; if (marker) { map.removeLayer(marker); delete markers[treeId]; } trees.splice(treeIndex, 1); try { saveTreesToLocalStorage(); } catch (error) { showNotification("Error saving deletion."); } populateSidebarMenu(); showNotification(`"${treeSpecies}" deleted.`); }
 
-            function populateSidebarMenu() { if (!sidebarSpottedList || !sidebarPlantedList || !sidebarRemindersList || !sidebarSpottedCount || !sidebarPlantedCount || !sidebarReminderCount) { console.error("Sidebar list/count elements missing."); return; } sidebarSpottedList.innerHTML = ''; sidebarPlantedList.innerHTML = ''; sidebarRemindersList.innerHTML = ''; let sc=0, pc=0, rc=0; const sorted=[...trees].sort((a,b)=>a.species.localeCompare(b.species)); const placeholderHTML='<li class="text-gray-500 italic p-4 text-center">Nothing here yet.</li>'; sorted.forEach(tree=>{ const itemHTML=`<span class="flex-grow mr-2 overflow-hidden"><i class="fas fa-tree mr-2 ${tree.type==='Planted'?'text-blue-600':'text-green-600'}"></i><span class="font-medium">${tree.species}</span>${tree.notes?`<span class="text-xs text-gray-500 block ml-5 truncate" title="${tree.notes}">(${tree.notes.substring(0,30)}${tree.notes.length>30?'...':''})</span>`:''}</span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`; const action=()=>{ const targetTree=trees.find(t=>t.id===tree.id); if(targetTree){ closeSidebarMenu(); map.setView(targetTree.location, 17, {animate:true}); setTimeout(()=>{if(markers[targetTree.id]) markers[targetTree.id].openPopup();}, 300); }}; const listItem=document.createElement('li'); listItem.className='list-item'; listItem.innerHTML=itemHTML; listItem.querySelector('.view-on-map-btn').addEventListener('click',action); let targetList; if(tree.type==='Spotted'){ targetList = sidebarSpottedList; sc++; } else if(tree.type==='Planted'){ targetList = sidebarPlantedList; pc++; } if(targetList) targetList.appendChild(listItem); if(tree.needsAttention){ const reminderItem=document.createElement('li'); reminderItem.className='list-item'; reminderItem.innerHTML=`<span class="flex-grow mr-2 overflow-hidden"><i class="fas fa-bell mr-2 text-orange-500"></i><span class="font-medium">${tree.species}</span> <span class="text-xs text-gray-500">(${tree.type})</span></span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`; reminderItem.querySelector('.view-on-map-btn').addEventListener('click',action); sidebarRemindersList.appendChild(reminderItem); rc++; } }); sidebarSpottedCount.textContent=sc; sidebarPlantedCount.textContent=pc; sidebarReminderCount.textContent=rc; if(sc===0) sidebarSpottedList.innerHTML=placeholderHTML; if(pc===0) sidebarPlantedList.innerHTML=placeholderHTML; if(rc===0) sidebarRemindersList.innerHTML=placeholderHTML; }
+            function populateSidebarMenu() { if (!sidebarSpottedList || !sidebarPlantedList || !sidebarRemindersList || !sidebarSpottedCount || !sidebarPlantedCount || !sidebarReminderCount) { console.error("Sidebar list/count elements missing."); return; } sidebarSpottedList.innerHTML = ''; sidebarPlantedList.innerHTML = ''; sidebarRemindersList.innerHTML = ''; let sc = 0, pc = 0, rc = 0; const sorted = [...trees].sort((a, b) => a.species.localeCompare(b.species)); const placeholderHTML = '<li class="text-gray-500 italic p-4 text-center">Nothing here yet.</li>'; sorted.forEach(tree => { const itemHTML = `<span class="flex-grow mr-2 overflow-hidden"><i class="fas fa-tree mr-2 ${tree.type === 'Planted' ? 'text-blue-600' : 'text-green-600'}"></i><span class="font-medium">${tree.species}</span>${tree.notes ? `<span class="text-xs text-gray-500 block ml-5 truncate" title="${tree.notes}">(${tree.notes.substring(0, 30)}${tree.notes.length > 30 ? '...' : ''})</span>` : ''}</span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`; const action = () => { const targetTree = trees.find(t => t.id === tree.id); if (targetTree) { closeSidebarMenu(); map.setView(targetTree.location, 17, { animate: true }); setTimeout(() => { if (markers[targetTree.id]) markers[targetTree.id].openPopup(); }, 300); } }; const listItem = document.createElement('li'); listItem.className = 'list-item'; listItem.innerHTML = itemHTML; listItem.querySelector('.view-on-map-btn').addEventListener('click', action); let targetList; if (tree.type === 'Spotted') { targetList = sidebarSpottedList; sc++; } else if (tree.type === 'Planted') { targetList = sidebarPlantedList; pc++; } if (targetList) targetList.appendChild(listItem); if (tree.needsAttention) { const reminderItem = document.createElement('li'); reminderItem.className = 'list-item'; reminderItem.innerHTML = `<span class="flex-grow mr-2 overflow-hidden"><i class="fas fa-bell mr-2 text-orange-500"></i><span class="font-medium">${tree.species}</span> <span class="text-xs text-gray-500">(${tree.type})</span></span><button class="view-on-map-btn" data-tree-id="${tree.id}"><i class="fas fa-map-marker-alt mr-1"></i>View</button>`; reminderItem.querySelector('.view-on-map-btn').addEventListener('click', action); sidebarRemindersList.appendChild(reminderItem); rc++; } }); sidebarSpottedCount.textContent = sc; sidebarPlantedCount.textContent = pc; sidebarReminderCount.textContent = rc; if (sc === 0) sidebarSpottedList.innerHTML = placeholderHTML; if (pc === 0) sidebarPlantedList.innerHTML = placeholderHTML; if (rc === 0) sidebarRemindersList.innerHTML = placeholderHTML; }
 
-            function showNotification(message) { document.getElementById('notification-text').textContent=message; notification.classList.remove('translate-x-full'); notification.classList.add('-translate-x-4'); setTimeout(()=>{notification.classList.remove('-translate-x-4'); notification.classList.add('translate-x-full');},3000); }
+            function showNotification(message) { document.getElementById('notification-text').textContent = message; notification.classList.remove('translate-x-full'); notification.classList.add('-translate-x-4'); setTimeout(() => { notification.classList.remove('-translate-x-4'); notification.classList.add('translate-x-full'); }, 3000); }
             function loadExistingTrees() { trees.forEach(tree => { if (tree.needsAttention === undefined) tree.needsAttention = false; addTreeMarker(tree); }); }
 
             function toggleMapView() {
@@ -642,7 +1107,7 @@
                     const latLng = map.layerPointToLatLng(point);
                     if (latLng && dragTreeType) {
                         if (provisionalMarker) { map.removeLayer(provisionalMarker); provisionalMarker = null; }
-                        provisionalMarker = L.marker([latLng.lat, latLng.lng]).addTo(map);
+                        provisionalMarker = L.marker([latLng.lat, latLng.lng], { icon: customTreeIcon }).addTo(map);
                         openAddForm(latLng.lat, latLng.lng, dragTreeType);
                         formOpened = true;
                     } else { console.warn("Could not get LatLng or tree type on map drop."); }
@@ -653,7 +1118,7 @@
                 isDragging = false; dragTreeType = null; hasDragged = false; startX = null; startY = null; offsetX = null; offsetY = null; draggedOriginalFab = null;
             }
 
-            function attemptManualLocationFetch() { if (navigator.geolocation) { showNotification("Attempting to find your location..."); navigator.geolocation.getCurrentPosition( (pos) => { const lat = pos.coords.latitude; const lng = pos.coords.longitude; lastKnownLocation = [lat, lng]; if (!currentLocationMarker) { currentLocationMarker = L.marker(lastKnownLocation, { icon: currentLocationIcon }).addTo(map); } else { currentLocationMarker.setLatLng(lastKnownLocation); } map.setView(lastKnownLocation, 16, { animate: true }); showNotification("Location found and map centered!"); }, (err) => { console.error("Manual Geo Err: ", err.message); showNotification(`Could not get location: ${err.message}. Please ensure location services are enabled.`); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } ); } else { showNotification("Geolocation is not supported by your browser."); } }
+            function attemptManualLocationFetch() { if (navigator.geolocation) { showNotification("Attempting to find your location..."); navigator.geolocation.getCurrentPosition((pos) => { const lat = pos.coords.latitude; const lng = pos.coords.longitude; lastKnownLocation = [lat, lng]; if (!currentLocationMarker) { currentLocationMarker = L.marker(lastKnownLocation, { icon: currentLocationIcon }).addTo(map); } else { currentLocationMarker.setLatLng(lastKnownLocation); } map.setView(lastKnownLocation, 16, { animate: true }); showNotification("Location found and map centered!"); }, (err) => { console.error("Manual Geo Err: ", err.message); showNotification(`Could not get location: ${err.message}. Please ensure location services are enabled.`); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }); } else { showNotification("Geolocation is not supported by your browser."); } }
 
             function initializeApp() {
                 loadExistingTrees();
@@ -667,16 +1132,16 @@
                 sidebarBackBtns.forEach(button => { button.addEventListener('click', () => showSidebarView('sidebar-main-view')); });
 
                 bottomSheetCloseBtn.addEventListener('click', () => {
-                    const isAddingOperation = !editTreeIdInput.value; 
+                    const isAddingOperation = !editTreeIdInput.value;
                     if (isAddingOperation && provisionalMarker) { map.removeLayer(provisionalMarker); provisionalMarker = null; }
-                    closeFormSheet(); 
+                    closeFormSheet();
                 });
                 cancelFormBtn.addEventListener('click', () => {
-                    const isAddingOperation = !editTreeIdInput.value; 
+                    const isAddingOperation = !editTreeIdInput.value;
                     if (isAddingOperation && provisionalMarker) { map.removeLayer(provisionalMarker); provisionalMarker = null; }
-                    closeFormSheet(); 
+                    closeFormSheet();
                 });
-                
+
                 locateFab.addEventListener('click', () => { if (lastKnownLocation) { map.setView(lastKnownLocation, 16, { animate: true }); } else { attemptManualLocationFetch(); } });
                 addTreeFab.addEventListener('click', (e) => { e.stopPropagation(); addFabContainer.classList.toggle('expanded'); });
                 mapToggleFab.addEventListener('click', toggleMapView);
@@ -695,35 +1160,35 @@
 
                     const processImageAndSave = (saveCallback) => { if (imageFile) { const reader = new FileReader(); reader.onload = (e) => { newImageDataUrl = e.target.result; saveCallback(); }; reader.onerror = (error) => { console.error("FileReader Error:", error); showNotification("Error reading image."); }; reader.readAsDataURL(imageFile); } else { saveCallback(); } };
 
-                    if (editingTreeId) { 
-                         const treeIndex = trees.findIndex(t => t.id === editingTreeId);
-                         if (treeIndex === -1) { console.error("Tree to edit not found"); showNotification("Error: Could not find tree to update."); return; }
-                         processImageAndSave(() => {
-                             const treeToUpdate = trees[treeIndex];
-                             treeToUpdate.species = species; treeToUpdate.notes = notes; treeToUpdate.location.lat = lat; treeToUpdate.location.lng = lng; treeToUpdate.type = type;
-                             if (newImageDataUrl !== null) { treeToUpdate.imageUrl = newImageDataUrl; } else if (!imageFile && treeToUpdate.imageUrl) { /* Keep existing */ } else { treeToUpdate.imageUrl = ''; }
-                             try { saveTreesToLocalStorage(); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving updated data."); return; }
-                             const marker = markers[editingTreeId];
-                             if (marker) { marker.setLatLng([lat, lng]); marker.setPopupContent(createPopupContent(treeToUpdate)); }
-                             populateSidebarMenu(); closeFormSheet(); showNotification(`"${species}" tree updated.`);
-                         });
-                    } else { 
-                         processImageAndSave(() => {
-                             const newTree = { id: Date.now().toString(), type, species, notes, location: { lat, lng }, imageUrl: newImageDataUrl || '', dateAdded: new Date().toISOString(), needsAttention: false };
-                             trees.push(newTree);
-                             try { saveTreesToLocalStorage(); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving new data."); return; }
-                             
-                             if (provisionalMarker) {
-                                 markers[newTree.id] = provisionalMarker;
-                                 provisionalMarker.on('popupopen', () => attachPopupListeners(newTree.id));
-                                 provisionalMarker.bindPopup(() => createPopupContent(newTree));
-                                 provisionalMarker = null; 
-                             } else {
-                                 console.warn("Provisional marker missing on save. Creating new one.");
-                                 addTreeMarker(newTree);
-                             }
-                             populateSidebarMenu(); closeFormSheet(); showNotification(`"${species}" tree added.`);
-                         });
+                    if (editingTreeId) {
+                        const treeIndex = trees.findIndex(t => t.id === editingTreeId);
+                        if (treeIndex === -1) { console.error("Tree to edit not found"); showNotification("Error: Could not find tree to update."); return; }
+                        processImageAndSave(() => {
+                            const treeToUpdate = trees[treeIndex];
+                            treeToUpdate.species = species; treeToUpdate.notes = notes; treeToUpdate.location.lat = lat; treeToUpdate.location.lng = lng; treeToUpdate.type = type;
+                            if (newImageDataUrl !== null) { treeToUpdate.imageUrl = newImageDataUrl; } else if (!imageFile && treeToUpdate.imageUrl) { /* Keep existing */ } else { treeToUpdate.imageUrl = ''; }
+                            try { saveTreesToLocalStorage(); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving updated data."); return; }
+                            const marker = markers[editingTreeId];
+                            if (marker) { marker.setLatLng([lat, lng]); marker.setPopupContent(createPopupContent(treeToUpdate)); }
+                            populateSidebarMenu(); closeFormSheet(); showNotification(`"${species}" tree updated.`);
+                        });
+                    } else {
+                        processImageAndSave(() => {
+                            const newTree = { id: Date.now().toString(), type, species, notes, location: { lat, lng }, imageUrl: newImageDataUrl || '', dateAdded: new Date().toISOString(), needsAttention: false };
+                            trees.push(newTree);
+                            try { saveTreesToLocalStorage(); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving new data."); return; }
+
+                            if (provisionalMarker) {
+                                markers[newTree.id] = provisionalMarker;
+                                provisionalMarker.on('popupopen', () => attachPopupListeners(newTree.id));
+                                provisionalMarker.bindPopup(() => createPopupContent(newTree));
+                                provisionalMarker = null;
+                            } else {
+                                console.warn("Provisional marker missing on save. Creating new one.");
+                                addTreeMarker(newTree);
+                            }
+                            populateSidebarMenu(); closeFormSheet(); showNotification(`"${species}" tree added.`);
+                        });
                     }
                 });
 
@@ -736,11 +1201,12 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/LeafLog/service-worker.js') 
+                navigator.serviceWorker.register('/LeafLog/service-worker.js')
                     .then(registration => { console.log('Service Worker registered successfully with scope:', registration.scope); })
                     .catch(error => { console.error('Service Worker registration failed:', error); });
             });
         }
     </script>
 </body>
+
 </html>
