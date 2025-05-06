@@ -7,7 +7,7 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     <!-- Theme Color -->
-    <meta name="theme-color" content="#047857">
+    <meta name="theme-color" content="#16a34a">
     <!-- iOS Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"> <!-- or default or black -->
@@ -44,10 +44,11 @@
         }
 
         /* Disable Tap Highlight */
-        button, a, input, select, textarea, .fab, .sub-fab, .sidebar-category-trigger, .view-on-map-btn, .leaflet-popup-content button, #map-toggle-fab { /* Added map-toggle-fab */
+        button, a, input, select, textarea, .fab, .sub-fab, .sidebar-category-trigger, .view-on-map-btn, .leaflet-popup-content button {
             -webkit-tap-highlight-color: transparent;
              /* tap-highlight-color: transparent; /* Future-proofing */
         }
+
 
         /* --- Sidebar Menu --- */
         #sidebar-menu {
@@ -136,17 +137,11 @@
         }
         .fab i { font-size: 24px; transition: transform 0.3s ease; }
 
-        /* Secondary FAB Style (used for Locate and Map Toggle) */
+        /* Locate FAB Container */
+        .locate-fab-container { position: fixed; bottom: 60px; right: 15px; z-index: 1000; }
         .fab-secondary { background-color: #ffffff; color: #374151; width: 48px; height: 48px; }
         .fab-secondary:hover { background-color: #ffffff; }
         .fab-secondary i { font-size: 20px; }
-
-        /* Locate FAB Container */
-        .locate-fab-container { position: fixed; bottom: 60px; right: 15px; z-index: 1000; }
-
-        /* Map Toggle FAB Container */
-        .map-toggle-container { position: fixed; top: 65px; right: 15px; z-index: 1000; } /* Adjusted top */
-        #map-toggle-fab i { font-size: 18px; } /* Slightly smaller icon */
 
         /* Add FAB Container & Expansion */
         #add-fab-container { position: fixed; bottom: 120px; right: 15px; z-index: 1000; display: flex; flex-direction: column; align-items: center; gap: 12px; }
@@ -201,8 +196,7 @@
 
         /* Current Location Icon */
         .current-location-div-icon { background: none; border: none; }
-        /* Hide Leaflet Attribution */
-        .leaflet-control-attribution { display: none !important; }
+
         /* Cancel Zone Styles */
         #cancel-zone {
             position: fixed;
@@ -241,7 +235,7 @@
         }
 
         /* Print Styles */
-        @media print { body, html { height: auto; overflow: visible; user-select: auto; } #map { height: 95vh !important; page-break-inside: avoid; width: 100% !important; } .no-print { display: none !important; } .header { position: relative !important; } #bottom-sheet, .locate-fab-container, #add-fab-container, #sidebar-menu, #cancel-zone, .map-toggle-container { display: none !important; } .current-location-div-icon { display: none !important; } } /* Added map-toggle-container to no-print */
+        @media print { body, html { height: auto; overflow: visible; user-select: auto; } #map { height: 95vh !important; page-break-inside: avoid; width: 100% !important; } .no-print { display: none !important; } .header { position: relative !important; } #bottom-sheet, .locate-fab-container, #add-fab-container, #sidebar-menu, #cancel-zone { display: none !important; } .current-location-div-icon { display: none !important; } }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -317,13 +311,6 @@
 
     <!-- Map -->
     <div id="map"></div>
-
-    <!-- Map View Toggle FAB -->
-    <div class="map-toggle-container no-print">
-        <button id="map-toggle-fab" class="fab fab-secondary" aria-label="Switch to Street View"> <!-- Changed aria-label -->
-            <i class="fas fa-map"></i> <!-- Changed initial icon -->
-        </button>
-    </div>
 
     <!-- Locate FAB -->
     <div class="locate-fab-container no-print">
@@ -402,24 +389,9 @@
         document.addEventListener('DOMContentLoaded', function() {
 
             // --- Map Initialization & Geolocation ---
-            const defaultCoords = [42.5048, 27.4626];
+            const defaultCoords = [42.5048, 27.4626]; 
             const map = L.map('map', { zoomControl: false }).setView(defaultCoords, 13);
-
-            // --- Define Map Layers ---
-            const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                 attribution: '© OSM',
-                 maxZoom: 19
-             });
-            const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
-                maxZoom: 19
-             });
-
-            // Add initial layer
-            satelliteLayer.addTo(map);
-            let currentMapLayer = 'satellite'; // Track the current layer
-
-            // --- Geolocation ---
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM', maxZoom: 19 }).addTo(map);
             const currentLocationIcon = L.divIcon({ html: '<i class="fas fa-location-arrow text-blue-600 text-2xl"></i>', className: 'current-location-div-icon', iconSize: [24, 24], iconAnchor: [12, 12] });
             let currentLocationMarker = null; let lastKnownLocation = null;
             if (navigator.geolocation) { navigator.geolocation.watchPosition( (pos) => { const lat=pos.coords.latitude, lng=pos.coords.longitude; lastKnownLocation=[lat,lng]; if(!currentLocationMarker){ currentLocationMarker=L.marker(lastKnownLocation, {icon: currentLocationIcon}).addTo(map); } else { currentLocationMarker.setLatLng(lastKnownLocation); } }, (err) => { console.error("Geo Err: ", err.message); if(currentLocationMarker){map.removeLayer(currentLocationMarker); currentLocationMarker=null;} lastKnownLocation=null; showNotification(`Location error: ${err.message}`); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } ); } else { console.log("Geo not supported."); }
@@ -461,8 +433,7 @@
             const subFabs = addFabContainer.querySelectorAll('.sub-fab');
             const mapContainer = document.getElementById('map');
             const notification = document.getElementById('notification');
-            const cancelZone = document.getElementById('cancel-zone');
-            const mapToggleFab = document.getElementById('map-toggle-fab'); // Map Toggle Button
+            const cancelZone = document.getElementById('cancel-zone'); // Cancel Zone reference
 
             // --- State Variables ---
             let trees = JSON.parse(localStorage.getItem('leaflog_trees') || '[]');
@@ -585,26 +556,6 @@
             function showNotification(message) { document.getElementById('notification-text').textContent=message; notification.classList.remove('translate-x-full'); notification.classList.add('-translate-x-4'); setTimeout(()=>{notification.classList.remove('-translate-x-4'); notification.classList.add('translate-x-full');},3000); }
             // Load existing data
             function loadExistingTrees() { trees.forEach(tree => { if (tree.needsAttention === undefined) tree.needsAttention = false; addTreeMarker(tree); }); }
-
-            // Map View Toggle Function
-             function toggleMapView() {
-                 const iconElement = mapToggleFab.querySelector('i');
-                 if (currentMapLayer === 'osm') {
-                     map.removeLayer(osmLayer);
-                     satelliteLayer.addTo(map);
-                     currentMapLayer = 'satellite';
-                     mapToggleFab.setAttribute('aria-label', 'Switch to Street View');
-                     iconElement.classList.remove('fa-satellite');
-                     iconElement.classList.add('fa-map');
-                 } else {
-                     map.removeLayer(satelliteLayer);
-                     osmLayer.addTo(map);
-                     currentMapLayer = 'osm';
-                     mapToggleFab.setAttribute('aria-label', 'Switch to Satellite View');
-                     iconElement.classList.remove('fa-map');
-                     iconElement.classList.add('fa-satellite');
-                 }
-             }
 
             // Drag Simulation Functions
             function startDrag(e) {
@@ -753,7 +704,6 @@
                 cancelFormBtn.addEventListener('click', closeFormSheet);
                 locateFab.addEventListener('click', () => { if (lastKnownLocation) { map.setView(lastKnownLocation, 16, { animate: true }); } else { showNotification("Your location is not available yet."); } });
                 addTreeFab.addEventListener('click', (e) => { e.stopPropagation(); addFabContainer.classList.toggle('expanded'); });
-                mapToggleFab.addEventListener('click', toggleMapView); // Map Toggle Listener
 
                 // Simulated Drag Listeners
                 subFabs.forEach(fab => { fab.addEventListener('mousedown', startDrag); fab.addEventListener('touchstart', startDrag, { passive: false }); });
@@ -788,10 +738,10 @@
                          processImageAndSave(() => {
                              const treeToUpdate = trees[treeIndex];
                              treeToUpdate.species = species; treeToUpdate.notes = notes; treeToUpdate.location.lat = lat; treeToUpdate.location.lng = lng; treeToUpdate.type = type;
-                             if (newImageDataUrl !== null) { treeToUpdate.imageUrl = newImageDataUrl; } else if (!imageFile && treeToUpdate.imageUrl) { /* Keep existing image if no new one is selected */ } else { treeToUpdate.imageUrl = ''; } // Clear if no file and no existing image
+                             if (newImageDataUrl !== null) { treeToUpdate.imageUrl = newImageDataUrl; }
                              try { saveTreesToLocalStorage(); } catch (error) { console.error("LocalStorage Error:", error); showNotification("Error saving updated data."); return; }
                              const marker = markers[editingTreeId];
-                             if (marker) { marker.setLatLng([lat, lng]); marker.setPopupContent(createPopupContent(treeToUpdate)); } // Update marker position too
+                             if (marker) { marker.setPopupContent(createPopupContent(treeToUpdate)); }
                              populateSidebarMenu(); closeFormSheet(); showNotification(`"${species}" tree updated.`);
                          });
                     } else { // Add Logic
@@ -819,7 +769,7 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // Register the service worker, using the correct path for GitHub Pages
-                navigator.serviceWorker.register('/LeafLog/service-worker.js') // Adjust path if needed
+                navigator.serviceWorker.register('/LeafLog/service-worker.js')
                     .then(registration => {
                         console.log('Service Worker registered successfully with scope:', registration.scope);
                     })
