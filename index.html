@@ -404,6 +404,7 @@
             // --- Map Initialization & Geolocation ---
             const defaultCoords = [42.5048, 27.4626];
             const map = L.map('map', { zoomControl: false }).setView(defaultCoords, 13);
+            const mapToggleFab = document.getElementById('map-toggle-fab'); // Moved up for early access
 
             // --- Define Map Layers ---
             const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -415,9 +416,31 @@
                 maxZoom: 19
              });
 
-            // Add initial layer
-            satelliteLayer.addTo(map);
-            let currentMapLayer = 'satellite'; // Track the current layer
+            // --- LocalStorage Keys ---
+            const treesStorageKey = 'leaflog_trees';
+            const preferredMapLayerKey = 'leaflog_preferred_map_layer';
+
+            // --- Load and Set Initial Map Layer ---
+            let currentMapLayer = localStorage.getItem(preferredMapLayerKey) || 'satellite'; // Default to satellite
+            const mapToggleFabIcon = mapToggleFab.querySelector('i');
+
+            if (currentMapLayer === 'osm') {
+                osmLayer.addTo(map);
+                mapToggleFab.setAttribute('aria-label', 'Switch to Satellite View');
+                if (mapToggleFabIcon) {
+                    mapToggleFabIcon.classList.remove('fa-map');
+                    mapToggleFabIcon.classList.add('fa-satellite');
+                }
+            } else { // 'satellite' or default
+                satelliteLayer.addTo(map);
+                mapToggleFab.setAttribute('aria-label', 'Switch to Street View');
+                if (mapToggleFabIcon) {
+                    mapToggleFabIcon.classList.remove('fa-satellite');
+                    mapToggleFabIcon.classList.add('fa-map');
+                }
+                currentMapLayer = 'satellite'; // Ensure it's explicitly set if loaded as null
+            }
+
 
             // --- Geolocation ---
             const currentLocationIcon = L.divIcon({ html: '<i class="fas fa-location-arrow text-blue-600 text-2xl"></i>', className: 'current-location-div-icon', iconSize: [24, 24], iconAnchor: [12, 12] });
@@ -462,10 +485,10 @@
             const mapContainer = document.getElementById('map');
             const notification = document.getElementById('notification');
             const cancelZone = document.getElementById('cancel-zone');
-            const mapToggleFab = document.getElementById('map-toggle-fab');
+            // mapToggleFab already defined above
 
             // --- State Variables ---
-            let trees = JSON.parse(localStorage.getItem('leaflog_trees') || '[]');
+            let trees = JSON.parse(localStorage.getItem(treesStorageKey) || '[]');
             let markers = {};
             let provisionalMarker = null; 
             let previousMapView = null; // To store map state before panning for form
@@ -509,7 +532,6 @@
                 imagePreview.classList.add('hidden');
                 previewImg.src = '#';
                 
-                // Store current map view BEFORE panning 
                 if (map) {
                     previousMapView = {
                         center: map.getCenter(),
@@ -547,10 +569,10 @@
                 notesInput.value = tree.notes || '';
                 imageInput.value = null;
                 if (tree.imageUrl) { previewImg.src = tree.imageUrl; imagePreview.classList.remove('hidden'); } else { imagePreview.classList.add('hidden'); previewImg.src = '#'; }
-                openFormSheet(); // Note: No map panning or previousMapView storage for edit
+                openFormSheet(); 
             }
 
-            function saveTreesToLocalStorage() { localStorage.setItem('leaflog_trees', JSON.stringify(trees)); }
+            function saveTreesToLocalStorage() { localStorage.setItem(treesStorageKey, JSON.stringify(trees)); }
             function addTreeMarker(tree) { const marker = L.marker([tree.location.lat, tree.location.lng]).addTo(map); markers[tree.id] = marker; marker.on('popupopen', () => attachPopupListeners(tree.id)); marker.bindPopup(() => createPopupContent(tree)); }
             function createPopupContent(tree) { const reminderButtonText = tree.needsAttention ? 'Remove Reminder' : 'Add Reminder'; const reminderButtonClass = tree.needsAttention ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-blue-500 hover:bg-blue-600'; let c = `<div class="popup-content"><h3 class="text-lg font-semibold">${tree.species}</h3><p class="text-sm text-gray-600"><strong>Type:</strong> ${tree.type}</p>`; if (tree.notes) c += `<p class="text-sm mt-1"><strong>Notes:</strong> ${tree.notes}</p>`; if (tree.imageUrl) c += `<img src="${tree.imageUrl}" alt="${tree.species}" class="popup-image mt-2">`; c += `<button class="toggle-reminder-btn text-xs text-white px-2 py-1 rounded mt-3 ${reminderButtonClass}" data-tree-id="${tree.id}"><i class="fas ${tree.needsAttention ? 'fa-bell-slash' : 'fa-bell'} mr-1"></i>${reminderButtonText}</button>`; c += `<div class="mt-3 pt-2 border-t border-gray-200 flex justify-end space-x-2"><button class="popup-edit-btn text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded" data-tree-id="${tree.id}" aria-label="Edit tree"><i class="fas fa-edit mr-1"></i>Edit</button><button class="popup-delete-btn text-xs text-red-600 hover:text-red-800 px-2 py-1 rounded" data-tree-id="${tree.id}" aria-label="Delete tree"><i class="fas fa-trash-alt mr-1"></i>Delete</button></div>`; c += `</div>`; return c; }
             function attachPopupListeners(treeId) { const popupNode = document.querySelector(`.leaflet-popup-content`); if (!popupNode) { console.error("Cannot find popup content node."); return; } const reminderBtn = popupNode.querySelector(`.toggle-reminder-btn[data-tree-id="${treeId}"]`); if (reminderBtn) { reminderBtn.replaceWith(reminderBtn.cloneNode(true)); popupNode.querySelector(`.toggle-reminder-btn[data-tree-id="${treeId}"]`).addEventListener('click', handleReminderToggle); } const editBtn = popupNode.querySelector(`.popup-edit-btn[data-tree-id="${treeId}"]`); if (editBtn) { editBtn.replaceWith(editBtn.cloneNode(true)); popupNode.querySelector(`.popup-edit-btn[data-tree-id="${treeId}"]`).addEventListener('click', handleEditTree); } const deleteBtn = popupNode.querySelector(`.popup-delete-btn[data-tree-id="${treeId}"]`); if (deleteBtn) { deleteBtn.replaceWith(deleteBtn.cloneNode(true)); popupNode.querySelector(`.popup-delete-btn[data-tree-id="${treeId}"]`).addEventListener('click', handleDeleteTree); } }
@@ -563,7 +585,29 @@
             function showNotification(message) { document.getElementById('notification-text').textContent=message; notification.classList.remove('translate-x-full'); notification.classList.add('-translate-x-4'); setTimeout(()=>{notification.classList.remove('-translate-x-4'); notification.classList.add('translate-x-full');},3000); }
             function loadExistingTrees() { trees.forEach(tree => { if (tree.needsAttention === undefined) tree.needsAttention = false; addTreeMarker(tree); }); }
 
-            function toggleMapView() { const iconElement = mapToggleFab.querySelector('i'); if (currentMapLayer === 'osm') { map.removeLayer(osmLayer); satelliteLayer.addTo(map); currentMapLayer = 'satellite'; mapToggleFab.setAttribute('aria-label', 'Switch to Street View'); iconElement.classList.remove('fa-satellite'); iconElement.classList.add('fa-map'); } else { map.removeLayer(satelliteLayer); osmLayer.addTo(map); currentMapLayer = 'osm'; mapToggleFab.setAttribute('aria-label', 'Switch to Satellite View'); iconElement.classList.remove('fa-map'); iconElement.classList.add('fa-satellite'); } }
+            function toggleMapView() {
+                // const iconElement = mapToggleFab.querySelector('i'); // Already defined as mapToggleFabIcon
+                if (currentMapLayer === 'osm') {
+                    map.removeLayer(osmLayer);
+                    satelliteLayer.addTo(map);
+                    currentMapLayer = 'satellite';
+                    mapToggleFab.setAttribute('aria-label', 'Switch to Street View');
+                    if (mapToggleFabIcon) {
+                        mapToggleFabIcon.classList.remove('fa-satellite');
+                        mapToggleFabIcon.classList.add('fa-map');
+                    }
+                } else {
+                    map.removeLayer(satelliteLayer);
+                    osmLayer.addTo(map);
+                    currentMapLayer = 'osm';
+                    mapToggleFab.setAttribute('aria-label', 'Switch to Satellite View');
+                    if (mapToggleFabIcon) {
+                        mapToggleFabIcon.classList.remove('fa-map');
+                        mapToggleFabIcon.classList.add('fa-satellite');
+                    }
+                }
+                localStorage.setItem(preferredMapLayerKey, currentMapLayer); // Save preference
+            }
 
             function startDrag(e) { if (e.type === 'touchstart') e.preventDefault(); const fab = e.currentTarget; dragTreeType = fab.dataset.treeType; isDragging = true; hasDragged = false; draggedOriginalFab = fab; const touch = e.type === 'touchstart' ? e.touches[0] : e; startX = touch.clientX; startY = touch.clientY; const rect = fab.getBoundingClientRect(); offsetX = startX - rect.left; offsetY = startY - rect.top; dragClone = fab.cloneNode(true); dragClone.id = 'drag-clone'; dragClone.style.left = `${startX - offsetX}px`; dragClone.style.top = `${startY - offsetY}px`; dragClone.style.backgroundColor = window.getComputedStyle(fab).backgroundColor; dragClone.style.color = window.getComputedStyle(fab).color; document.body.appendChild(dragClone); document.body.classList.add('dragging-active'); if (draggedOriginalFab) { draggedOriginalFab.style.visibility = 'hidden'; } if (cancelZone) cancelZone.classList.add('visible'); map.dragging.disable(); if (map.doubleClickZoom) map.doubleClickZoom.disable(); }
             function dragMove(e) { if (!isDragging || !dragClone) return; if (e.type === 'touchmove') e.preventDefault(); const touch = e.type === 'touchmove' ? e.touches[0] : e; const currentX = touch.clientX; const currentY = touch.clientY; const deltaX = currentX - startX; const deltaY = currentY - startY; if (!hasDragged && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) { hasDragged = true; } dragClone.style.left = `${currentX - offsetX}px`; dragClone.style.top = `${currentY - offsetY}px`; dragClone.style.visibility = 'hidden'; const elementUnderPointer = document.elementFromPoint(currentX, currentY); dragClone.style.visibility = 'visible'; const isOverCancelZone = cancelZone && (cancelZone === elementUnderPointer || cancelZone.contains(elementUnderPointer)); if (cancelZone) cancelZone.classList.toggle('drag-over', isOverCancelZone); mapContainer.classList.toggle('drag-over', mapContainer.contains(elementUnderPointer) && !isOverCancelZone); }
@@ -617,12 +661,12 @@
                 bottomSheetCloseBtn.addEventListener('click', () => {
                     const isAddingOperation = !editTreeIdInput.value; 
                     if (isAddingOperation && provisionalMarker) { map.removeLayer(provisionalMarker); provisionalMarker = null; }
-                    closeFormSheet(); // This will also call restorePreviousMapView
+                    closeFormSheet(); 
                 });
                 cancelFormBtn.addEventListener('click', () => {
                     const isAddingOperation = !editTreeIdInput.value; 
                     if (isAddingOperation && provisionalMarker) { map.removeLayer(provisionalMarker); provisionalMarker = null; }
-                    closeFormSheet(); // This will also call restorePreviousMapView
+                    closeFormSheet(); 
                 });
                 
                 locateFab.addEventListener('click', () => { if (lastKnownLocation) { map.setView(lastKnownLocation, 16, { animate: true }); } else { attemptManualLocationFetch(); } });
