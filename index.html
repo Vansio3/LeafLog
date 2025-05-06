@@ -443,7 +443,15 @@
 
 
             // --- Geolocation ---
-            const currentLocationIcon = L.divIcon({ html: '<i class="fas fa-location-arrow text-blue-600 text-2xl"></i>', className: 'current-location-div-icon', iconSize: [24, 24], iconAnchor: [12, 12] });
+            // const currentLocationIcon = L.divIcon({ html: '<i class="fas fa-location-arrow text-blue-600 text-2xl"></i>', className: 'current-location-div-icon', iconSize: [24, 24], iconAnchor: [12, 12] });
+            const currentLocationIcon = L.icon({
+                iconUrl: 'img/my-location-marker.png', // PATH TO YOUR CUSTOM ICON
+                iconSize: [32, 32], // Desired size of the icon [width, height] in pixels. Adjust as needed.
+                iconAnchor: [16, 32], // Point of the icon which will correspond to marker's location.
+                                      // For a pin, this is often [half_width, full_height] (bottom-center). Adjust as needed.
+                popupAnchor: [0, -32] // Point from which the popup should open relative to the iconAnchor.
+                                       // [0, -height] usually works well to position popup above the pin. Adjust as needed.
+            });
             let currentLocationMarker = null; let lastKnownLocation = null;
             if (navigator.geolocation) { navigator.geolocation.watchPosition( (pos) => { const lat=pos.coords.latitude, lng=pos.coords.longitude; lastKnownLocation=[lat,lng]; if(!currentLocationMarker){ currentLocationMarker=L.marker(lastKnownLocation, {icon: currentLocationIcon}).addTo(map); } else { currentLocationMarker.setLatLng(lastKnownLocation); } }, (err) => { console.error("Geo Err: ", err.message); if(currentLocationMarker){map.removeLayer(currentLocationMarker); currentLocationMarker=null;} lastKnownLocation=null; showNotification(`Location error: ${err.message}`); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } ); } else { console.log("Geo not supported."); }
 
