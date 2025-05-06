@@ -728,35 +728,6 @@
                 draggedOriginalFab = null;
             }
 
-            // Function to attempt manual location fetch
-            function attemptManualLocationFetch() {
-                if (navigator.geolocation) {
-                    showNotification("Attempting to find your location...");
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            const lat = pos.coords.latitude;
-                            const lng = pos.coords.longitude;
-                            lastKnownLocation = [lat, lng];
-                            if (!currentLocationMarker) {
-                                currentLocationMarker = L.marker(lastKnownLocation, { icon: currentLocationIcon }).addTo(map);
-                            } else {
-                                currentLocationMarker.setLatLng(lastKnownLocation);
-                            }
-                            map.setView(lastKnownLocation, 16, { animate: true });
-                            showNotification("Location found and map centered!");
-                        },
-                        (err) => {
-                            console.error("Manual Geo Err: ", err.message);
-                            showNotification(`Could not get location: ${err.message}. Please ensure location services are enabled.`);
-                            // lastKnownLocation remains null here
-                        },
-                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                    );
-                } else {
-                    showNotification("Geolocation is not supported by your browser.");
-                }
-            }
-
 
             // --- Event Listeners & Initialization Function ---
             function initializeApp() {
@@ -780,15 +751,7 @@
                 sidebarBackBtns.forEach(button => { button.addEventListener('click', () => showSidebarView('sidebar-main-view')); });
                 bottomSheetCloseBtn.addEventListener('click', closeFormSheet);
                 cancelFormBtn.addEventListener('click', closeFormSheet);
-                
-                locateFab.addEventListener('click', () => {
-                    if (lastKnownLocation) {
-                        map.setView(lastKnownLocation, 16, { animate: true });
-                    } else {
-                        attemptManualLocationFetch(); // Attempt to get location if not available
-                    }
-                });
-
+                locateFab.addEventListener('click', () => { if (lastKnownLocation) { map.setView(lastKnownLocation, 16, { animate: true }); } else { showNotification("Your location is not available yet."); } });
                 addTreeFab.addEventListener('click', (e) => { e.stopPropagation(); addFabContainer.classList.toggle('expanded'); });
                 mapToggleFab.addEventListener('click', toggleMapView); // Map Toggle Listener
 
